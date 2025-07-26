@@ -277,7 +277,3 @@ void userMenu(string userName)
     }
 }
 
-<<<<<<< HEAD
-//help
-=======
->>>>>>> main
