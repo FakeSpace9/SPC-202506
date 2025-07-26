@@ -66,7 +66,7 @@ void clearScreen()
 
 void userRegister()
 {
-    cout << "User";
+    cout << "User Registration";
     clearScreen();
     User newUser;
     string confirmPassword;
