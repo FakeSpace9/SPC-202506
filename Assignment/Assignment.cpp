@@ -7,8 +7,6 @@
 #include <fstream>
 #include <regex>
 
-using namespace std;
-
 void mainMenu();
 void clearScreen();
 void userRegister();
