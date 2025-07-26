@@ -95,7 +95,7 @@ void userRegister()
     while (true)
     {
         cout << "Enter Username: ";
-        cin >> newUser.username;
+        cin >> newUser.;
 
         bool exists = false;
         for (int i = 0; i < users.size(); i++)
