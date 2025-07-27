@@ -186,7 +186,7 @@ void userLogin()
     string userName;
     bool pwMatch;
     vector<User> users;
-    bool existUser;
+    bool existUser = false;
 
     // create or open file first
     ofstream ensureFile("userDetails.txt", ios::app);
@@ -237,13 +237,15 @@ void userLogin()
                 }
                 else
                 {
-                    cout << "Username or password incorrect.\n";
+                    clearScreen();
+                    cout << "User Login Failed\nPlease try again\n\nUsername or password incorrect.\n";
                 }
             }
         }
         if (!existUser)
         {
-            cout << "Username or password incorrect.\n";
+            clearScreen();
+            cout << "User Login Failed\nPlease try again\n\nUsername or password incorrect.\n";
         }
     }
     if (pwMatch)
@@ -257,7 +259,7 @@ void userMenu(string userName)
 {
     int choice;
     cout << "\nWelcome " << userName << "!" << endl;
-    cout << "1. Event Register\n2. Event Monitoring\n3. Event Reporting";
+    cout << "1. Event Register\n2. Event Monitoring\n3. Event Reporting\n4. Logout and exit.";
     while (true)
     {
         cout << "\nEnter your choice :";
@@ -271,9 +273,10 @@ void userMenu(string userName)
             break;
         case 3:
             break;
+        case 4:
+            return;
         default:
             cout << "Invalid option. Try again.";
         }
     }
 }
-
