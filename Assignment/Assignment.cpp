@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include <fstream>
 #include <regex>
+#include <cctype>
+#include <ctype.h>
 
 using namespace std;
 
@@ -15,6 +17,8 @@ void userRegister();
 void userLogin();
 bool isEmailValid(string email);
 void userMenu(string userName);
+void adminMenu(string userName);
+string toLowerSTR(string strings);
 
 struct User
 {
@@ -34,6 +38,7 @@ void mainMenu()
 {
     int choice = -1;
 
+    clearScreen();
     cout << "Welcome to blah blah blah" << endl;
     cout << "\n1. User Registeration.\n2. Login\n3. Exit\nEnter your choice : ";
 
@@ -96,6 +101,12 @@ void userRegister()
     {
         cout << "Enter Username: ";
         cin >> newUser.username;
+
+        if (toLowerSTR(newUser.username) == "admin")
+        {
+            cout << "'ADMIN' is a reserved word. Please try another.\n";
+            continue;
+        }
 
         bool exists = false;
         for (int i = 0; i < users.size(); i++)
@@ -226,6 +237,11 @@ void userLogin()
         cout << "Enter password : ";
         cin >> password;
 
+        if (toLowerSTR(userName) == "admin" && password == "admin")
+        {
+            adminMenu(userName);
+        }
+
         for (int i = 0; i < users.size(); i++)
         {
             if (users[i].username == userName)
@@ -255,11 +271,44 @@ void userLogin()
         userMenu(userName);
     }
 }
+string toLowerSTR(string strings)
+{
+
+    string result = strings;
+    transform(result.begin(), result.end(), result.begin(), ::tolower);
+    return result;
+}
+void adminMenu(string userName)
+{
+    int choice;
+    cout << "\nWelcome " << userName << "!" << endl;
+    cout << "1. Event Creation\n2. Event Monitoring\n3. Event Reporting\n4. Logout and exit.";
+    while (true)
+    {
+        cout << "\nEnter your choice :";
+        cin >> choice;
+        switch (choice)
+        {
+        case 1:
+            // code
+            break;
+        case 2:
+            break;
+        case 3:
+            break;
+        case 4:
+            return;
+        default:
+            cout << "Invalid option. Try again.";
+        }
+    }
+}
 void userMenu(string userName)
 {
     int choice;
     cout << "\nWelcome " << userName << "!" << endl;
-    cout << "1. Event Register\n2. Event Monitoring\n3. Event Reporting\n4. Logout and exit.";
+    cout << "1. Event Register\n2. Profile\n4. Logout and exit.";
+    // profile is to view past ticket also with update email and password
     while (true)
     {
         cout << "\nEnter your choice :";
