@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include <fstream>
 #include <regex>
+#include <cctype>
+#include <ctype.h>
 
 using namespace std;
 
@@ -34,6 +36,7 @@ void mainMenu()
 {
     int choice = -1;
 
+    clearScreen();
     cout << "Welcome to blah blah blah" << endl;
     cout << "\n1. User Registeration.\n2. Login\n3. Exit\nEnter your choice : ";
 
@@ -225,6 +228,11 @@ void userLogin()
         cin >> userName;
         cout << "Enter password : ";
         cin >> password;
+
+        if (userName.tolower() == "admin" && password == "admin")
+        {
+            // call admin page
+        }
 
         for (int i = 0; i < users.size(); i++)
         {
