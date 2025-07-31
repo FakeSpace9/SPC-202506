@@ -17,6 +17,7 @@ void userRegister();
 void userLogin();
 bool isEmailValid(string email);
 void userMenu(string userName);
+string toLowerSTR(string strings);
 
 struct User
 {
@@ -99,6 +100,12 @@ void userRegister()
     {
         cout << "Enter Username: ";
         cin >> newUser.username;
+
+        if (toLowerSTR(newUser.username) == "admin")
+        {
+            cout << "'ADMIN' is a reserved word. Please try another.\n";
+            continue;
+        }
 
         bool exists = false;
         for (int i = 0; i < users.size(); i++)
@@ -229,9 +236,9 @@ void userLogin()
         cout << "Enter password : ";
         cin >> password;
 
-        if (userName.tolower() == "admin" && password == "admin")
+        if (toLowerSTR(userName) == "admin" && password == "admin")
         {
-            // call admin page
+            cout << "admin page";
         }
 
         for (int i = 0; i < users.size(); i++)
@@ -262,6 +269,13 @@ void userLogin()
         cout << "login successful";
         userMenu(userName);
     }
+}
+string toLowerSTR(string strings)
+{
+
+    string result = strings;
+    transform(result.begin(), result.end(), result.begin(), ::tolower);
+    return result;
 }
 void userMenu(string userName)
 {
