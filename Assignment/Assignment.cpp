@@ -17,6 +17,7 @@ void userRegister();
 void userLogin();
 bool isEmailValid(string email);
 void userMenu(string userName);
+void adminMenu(string userName);
 string toLowerSTR(string strings);
 
 struct User
@@ -238,7 +239,7 @@ void userLogin()
 
         if (toLowerSTR(userName) == "admin" && password == "admin")
         {
-            cout << "admin page";
+            adminMenu(userName);
         }
 
         for (int i = 0; i < users.size(); i++)
@@ -277,11 +278,37 @@ string toLowerSTR(string strings)
     transform(result.begin(), result.end(), result.begin(), ::tolower);
     return result;
 }
+void adminMenu(string userName)
+{
+    int choice;
+    cout << "\nWelcome " << userName << "!" << endl;
+    cout << "1. Event Creation\n2. Event Monitoring\n3. Event Reporting\n4. Logout and exit.";
+    while (true)
+    {
+        cout << "\nEnter your choice :";
+        cin >> choice;
+        switch (choice)
+        {
+        case 1:
+            // code
+            break;
+        case 2:
+            break;
+        case 3:
+            break;
+        case 4:
+            return;
+        default:
+            cout << "Invalid option. Try again.";
+        }
+    }
+}
 void userMenu(string userName)
 {
     int choice;
     cout << "\nWelcome " << userName << "!" << endl;
-    cout << "1. Event Register\n2. Event Monitoring\n3. Event Reporting\n4. Logout and exit.";
+    cout << "1. Event Register\n2. Profile\n4. Logout and exit.";
+    // profile is to view past ticket also with update email and password
     while (true)
     {
         cout << "\nEnter your choice :";
