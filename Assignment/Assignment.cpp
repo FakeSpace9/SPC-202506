@@ -99,7 +99,7 @@ void userRegister()
     // validation for username
     while (true)
     {
-        cout << "Enter Username: ";
+        cout << "Enter your Username: ";
         cin >> newUser.username;
 
         if (toLowerSTR(newUser.username) == "admin")
