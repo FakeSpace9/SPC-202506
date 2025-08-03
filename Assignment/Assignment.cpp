@@ -250,6 +250,7 @@ void userLogin()
         if (toLowerSTR(userName) == "admin" && password == "admin")
         {
             adminMenu(userName);
+            return; // exit the program
         }
 
         for (int i = 0; i < users.size(); i++)
@@ -291,11 +292,11 @@ string toLowerSTR(string strings)
 void adminMenu(string userName)
 {
     int choice;
-    clearScreen();
-    cout << "Welcome " << userName << "!" << endl;
-    cout << "1. Event Creation\n2. Event Monitoring\n3. Event Reporting\n4. Logout and exit.";
     while (true)
     {
+        clearScreen();
+        cout << "Welcome " << userName << "!" << endl;
+        cout << "1. Event Creation\n2. Event Monitoring\n3. Event Reporting\n4. Logout and exit.";
         cout << "\nEnter your choice :";
         cin >> choice;
         switch (choice)
@@ -463,5 +464,6 @@ void createEventSeats()
     }
     file.close();
 
-    cout << "\nEvent and seat layout with pricing saved successfully.\n";
+    cout << "\nEvent and seat layout with pricing saved successfully.\nBack to admin menu in 3 second.";
+    Sleep(3000);
 }
