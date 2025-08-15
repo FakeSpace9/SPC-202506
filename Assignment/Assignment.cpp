@@ -5,9 +5,11 @@
 #include <windows.h>
 #include <cstdlib>
 #include <fstream>
+#include <sstream>
 #include <regex>
 #include <cctype>
 #include <ctype.h>
+#include <ctime>
 
 using namespace std;
 
@@ -20,6 +22,9 @@ void userMenu(string userName);
 void adminMenu(string userName);
 string toLowerSTR(string strings);
 void createEventSeats();
+bool isFutureDate(string dateStr);
+bool timeValid(const string &timeStr);
+void displayUpcomingConcert();
 
 struct User
 {
@@ -37,6 +42,17 @@ struct Seat
     bool isBooked;
 };
 
+struct Concert
+{
+    string concertName;
+    string artist;
+    string venue;
+    string date;
+    string time;
+};
+
+vector<Concert> loadConcerts(const string &filename);
+
 // main function
 int main()
 {
@@ -46,10 +62,12 @@ int main()
 
 void mainMenu()
 {
-    int choice = -1;
+    int choice;
 
     clearScreen();
-    cout << "Welcome to blah blah blah" << endl;
+    cout << "Welcome to blah blah blah\n"
+         << endl;
+    displayUpcomingConcert();
     cout << "\n1. User Registeration.\n2. Login\n3. Exit\nEnter your choice : ";
 
     cin >> choice;
@@ -342,26 +360,137 @@ void userMenu(string userName)
     }
 }
 
+bool isFutureDate(string dateStr)
+{
+    // allow using / instead of -
+    for (char &c : dateStr)
+    {
+        if (c == '/')
+            c = '-';
+    }
+
+    // Extract day, month, year
+    int day, month, year;
+    char dash1, dash2;
+    stringstream ss(dateStr);
+    ss >> day >> dash1 >> month >> dash2 >> year;
+
+    // Check if day, month and year are separated
+    if (dash1 != '-' || dash2 != '-')
+    {
+        cout << "Please use \"/\" or \"-\".\n";
+        return false;
+    }
+
+    // Basic range check
+    if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1900)
+    {
+        cout << "Please enter a valid date.\n";
+        return false;
+    }
+
+    // Get current system date
+    time_t now = time(0);
+    tm current = *localtime(&now);
+
+    int currentDay = current.tm_mday;
+    int currentMonth = current.tm_mon + 1;
+    int currentYear = current.tm_year + 1900;
+
+    // Compare year, month, day
+    if (year > currentYear)
+        return true;
+    if (year == currentYear && month > currentMonth)
+        return true;
+    if (year == currentYear && month == currentMonth && day >= currentDay)
+        return true;
+
+    cout << "Please enter a future date.\n";
+    return false;
+}
+
+bool timeValid(const string &timeStr)
+{
+    // must use :
+    if (timeStr.find(':') == string::npos)
+    {
+        cout << "Please use HH:MM as the format.\n";
+        return false;
+    }
+
+    int hour, minute;
+    char colon;
+    stringstream ss(timeStr);
+    ss >> hour >> colon >> minute;
+
+    // Check basic time format
+    if (colon != ':' || hour < 0 || hour > 23 || minute < 0 || minute > 59)
+    {
+        cout << "Hours must be 00-23 and minutes 00-59.\n";
+        return false;
+    }
+    return true;
+}
+
 void createEventSeats()
 {
 
     clearScreen();
-    string eventName, eventDate, artistName;
+    string eventName, artistName, eventVenue, eventDate, startTime, endTime;
     cin.ignore();
-    cout << "Enter Event Name: ";
+    cout << "Enter concert Name: ";
     getline(cin, eventName);
     cout << "Enter Artist Name(s): ";
     getline(cin, artistName);
-    cout << "Enter Event Date (dd-mm-yyyy): ";
-    getline(cin, eventDate);
+    cout << "Enter concert Venue: ";
+    getline(cin, eventVenue);
+
+    do
+    {
+        cout << "Enter concert date (dd-mm-yyyy or d-m-yyyy): ";
+        getline(cin, eventDate);
+    } while (!isFutureDate(eventDate));
+
+    do
+    {
+        cout << "Enter start time (HH:MM): ";
+        getline(cin, startTime);
+    } while (!timeValid(startTime));
+
+    do
+    {
+        cout << "Enter End Time (HH:MM): ";
+        getline(cin, endTime);
+    } while (!timeValid(endTime));
 
     int rows, columns, vipRows, regularRows;
-    cout << "Enter number of rows: ";
+    cout << "Enter number of rows (max 26): ";
     cin >> rows;
+    while (rows < 10)
+    {
+        cout << "At least 10 rows are required. Please enter again: ";
+        cin >> rows;
+    }
+    while (rows > 26)
+    {
+        cout << "Maximum 26 rows. Please enter again: ";
+        cin >> rows;
+    }
+
     cout << "Enter number of seats/row: ";
     cin >> columns;
+    while (columns < 10)
+    {
+        cout << "At least 10 seats per row. Please enter again: ";
+        cin >> columns;
+    }
+    while (columns > 25)
+    {
+        cout << "Cannot exceed 25 seats per row. Please enter again: ";
+        cin >> columns;
+    }
 
-    // Validation rows
+    // categorize rows
     while (true)
     {
         cout << "Enter number of VIP rows: ";
@@ -380,7 +509,7 @@ void createEventSeats()
     }
 
     string seatFileName = "seats_" + eventName + ".txt";
-    // mke filename nice one
+    // make filename nice one
     replace(seatFileName.begin(), seatFileName.end(), ' ', '_');
 
     // seats de layout
@@ -445,7 +574,9 @@ void createEventSeats()
 
     // Save events
     ofstream eventFile("events.txt", ios::app);
-    eventFile << eventName << ";" << artistName << ";" << eventDate << ";" << seatFileName << endl;
+    eventFile << eventName << ";" << artistName << ";" << eventVenue << ";"
+              << eventDate << ";" << startTime << ";" << endTime << ";"
+              << seatFileName << endl;
     eventFile.close();
 
     // file validation
@@ -466,4 +597,52 @@ void createEventSeats()
 
     cout << "\nEvent and seat layout with pricing saved successfully.\nBack to admin menu in 3 second.";
     Sleep(3000);
+}
+
+vector<Concert> loadConcerts(const string &filename)
+{
+    vector<Concert> concerts;
+    ifstream file(filename);
+    string line;
+
+    while (getline(file, line))
+    {
+        stringstream ss(line);
+        string concertName, artist, venue, date, time;
+
+        getline(ss, concertName, ';');
+        getline(ss, artist, ';');
+        getline(ss, venue, ';');
+        getline(ss, date, ';');
+        getline(ss, time, ';');
+
+        // Push into vector
+        concerts.push_back({concertName, artist, venue, date, time});
+    }
+    return concerts;
+}
+
+void displayUpcomingConcert()
+{
+    static size_t index = 0; // remembers last shown concert
+    vector<Concert> concerts = loadConcerts("events.txt");
+
+    if (concerts.empty())
+    {
+        cout << "=================================\n";
+        cout << "No upcoming event.\n";
+        cout << "=================================\n\n";
+        return;
+    }
+
+    Concert c = concerts[index];
+    cout << "COMING SOON\n";
+    cout << "Title:  " << c.concertName << "\n";
+    cout << "Artist: " << c.artist << "\n";
+    cout << "Venue:  " << c.venue << "\n";
+    cout << "Date:   " << c.date << "\n";
+    cout << "Time:   " << c.time << "\n";
+    cout << "-----------------------------------\n\n";
+
+    index = (index + 1) % concerts.size(); // rotate
 }
