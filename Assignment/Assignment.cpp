@@ -5,9 +5,11 @@
 #include <windows.h>
 #include <cstdlib>
 #include <fstream>
+#include <sstream>
 #include <regex>
 #include <cctype>
 #include <ctype.h>
+#include <ctime>
 
 using namespace std;
 
@@ -19,7 +21,6 @@ bool isEmailValid(string email);
 void userMenu(string userName);
 void adminMenu(string userName);
 string toLowerSTR(string strings);
-void createEventSeats();
 
 struct User
 {
@@ -27,15 +28,6 @@ struct User
     string password;
     string email;
 };
-
-struct Seat {
-    char row;         // A, B, C...
-    int number;       // 1–10
-    string section;   // VIP / Regular / Economy
-    double price;
-    bool isBooked;
-};
-
 
 // main function
 int main()
@@ -46,10 +38,12 @@ int main()
 
 void mainMenu()
 {
-    int choice = -1;
+    int choice;
 
     clearScreen();
-    cout << "Welcome to blah blah blah" << endl;
+    cout << "Welcome to blah blah blah\n"
+         << endl;
+    displayUpcomingConcert();
     cout << "\n1. User Registeration.\n2. Login\n3. Exit\nEnter your choice : ";
 
     cin >> choice;
@@ -250,6 +244,7 @@ void userLogin()
         if (toLowerSTR(userName) == "admin" && password == "admin")
         {
             adminMenu(userName);
+            return; // exit the program
         }
 
         for (int i = 0; i < users.size(); i++)
@@ -291,11 +286,13 @@ string toLowerSTR(string strings)
 void adminMenu(string userName)
 {
     int choice;
-    clearScreen();
-    cout << "Welcome " << userName << "!" << endl;
+    cout << "\nWelcome " << userName << "!" << endl;
     cout << "1. Event Creation\n2. Event Monitoring\n3. Event Reporting\n4. Logout and exit.";
     while (true)
     {
+        clearScreen();
+        cout << "Welcome " << userName << "!" << endl;
+        cout << "1. Event Creation\n2. Event Monitoring\n3. Event Reporting\n4. Logout and exit.";
         cout << "\nEnter your choice :";
         cin >> choice;
         switch (choice)
@@ -340,120 +337,3 @@ void userMenu(string userName)
         }
     }
 }
-
-void createEventSeats() {
-
-    clearScreen();
-    string eventName, eventDate, artistName;
-    cin.ignore();
-    cout << "Enter Event Name: ";
-    getline(cin, eventName);
-    cout << "Enter Artist Name(s): ";
-    getline(cin, artistName);
-    cout << "Enter Event Date (dd-mm-yyyy): ";
-    getline(cin, eventDate);
-
-    int rows, columns, vipRows, regularRows;
-    cout << "Enter number of rows: ";
-    cin >> rows;
-    cout << "Enter number of seats/row: ";
-    cin >> columns;
-
-    // Validation rows
-    while (true) {
-        cout << "Enter number of VIP rows: ";
-        cin >> vipRows;
-        cout << "Enter number of Regular rows: ";
-        cin >> regularRows;
-
-        if (vipRows + regularRows > rows) {
-            cout << "VIP + Regular rows exceed total rows. Try again.\n";
-        } else {
-            break;
-        }
-    }
-
-    string seatFileName = "seats_" + eventName + ".txt";
-    // mke filename nice one
-    replace(seatFileName.begin(), seatFileName.end(), ' ', '_');
-
-
-    // seats de layout
-    clearScreen();
-    cout << "Preview:\n\n";
-
-    for (int i = 0; i < rows; i++) {
-        if (i == 0)
-            cout << "VIP:\n";
-        else if (i == vipRows)
-            cout << "\nRegular:\n";
-        else if (i == vipRows + regularRows)
-            cout << "\nNormal:\n";
-
-        for (int j = 1; j <= columns; j++) {
-            cout << "[" << (char)('A' + i) << j << "] ";
-        }
-        cout << endl;
-    }
-
-    // set seat prices
-    double vipPrice, regPrice, normalPrice;
-    cout << "\nSet the price\n";
-    cout << "Enter VIP seat price: RM ";
-    cin >> vipPrice;
-    cout << "Enter Regular seat price: RM ";
-    cin >> regPrice;
-    cout << "Enter Normal seat price: RM ";
-    cin >> normalPrice;
-
-    
-    vector<Seat> seatList;
-    for (int i = 0; i < rows; i++) {
-        string section;
-        if (i < vipRows)
-            section = "VIP";
-        else if (i < vipRows + regularRows)
-            section = "Regular";
-        else
-            section = "Normal";
-
-        for (int j = 1; j <= columns; j++) {
-            Seat seat;
-            seat.row = 'A' + i;
-            seat.number = j;
-            seat.section = section;
-            seat.isBooked = false;
-
-            if (section == "VIP")
-                seat.price = vipPrice;
-            else if (section == "Regular")
-                seat.price = regPrice;
-            else
-                seat.price = normalPrice;
-
-            seatList.push_back(seat);
-        }
-    }
-
-    // Save events
-    ofstream eventFile("events.txt", ios::app);
-    eventFile << eventName << ";" << artistName << ";" << eventDate << ";" << seatFileName << endl;
-    eventFile.close();
-
-    // file validation
-    ofstream file(seatFileName);
-    if (!file) {
-        cout << "Error creating seat file.\n";
-        return;
-    }
-
-    //Save seats
-    for (Seat s : seatList) {
-        file << s.row << ";" << s.number << ";" << s.section << ";"
-             << s.price << ";" << s.isBooked << "\n";
-    }
-    file.close();
-
-    cout << "\nEvent and seat layout with pricing saved successfully.\n";
-}
-
