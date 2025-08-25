@@ -13,20 +13,8 @@
 #include <ctime>
 
 using namespace std;
-#test
 
-void mainMenu();
-void clearScreen();
-void userRegister();
-void userLogin();
-bool isEmailValid(string email);
-void userMenu(string userName);
-void adminMenu(string userName);
-string toLowerSTR(string strings);
-void createEventSeats();
-bool isFutureDate(string dateStr);
-bool timeValid(const string &timeStr);
-void displayUpcomingConcert();
+
 
 struct User
 {
@@ -54,6 +42,20 @@ struct Concert
 };
 
 vector<Concert> loadConcerts(const string &filename);
+void mainMenu();
+void clearScreen();
+void userRegister();
+void userLogin();
+bool isEmailValid(string email);
+void userMenu(string userName);
+void adminMenu(string userName);
+string toLowerSTR(string strings);
+void createEventSeats();
+bool isFutureDate(string dateStr);
+bool timeValid(const string &timeStr);
+void displayUpcomingConcert();
+void eventRegistration(const string &userName);
+bool checkoutAndPayment(const string &userName, const Concert &concert, const vector<Seat> &selectedSeats, double totalPrice);
 
 // main function
 int main()
@@ -348,8 +350,8 @@ void userMenu(string userName)
         switch (choice)
         {
         case 1:
-            // code
-            break;
+                eventRegistration(userName);
+                break;
         case 2:
             break;
         case 3:
@@ -647,4 +649,150 @@ void displayUpcomingConcert()
     cout << "-----------------------------------\n\n";
 
     index = (index + 1) % concerts.size(); // rotate
+}
+
+// Utility: Load seats from file
+vector<Seat> loadSeats(const string& seatFileName) {
+    vector<Seat> seats;
+    ifstream file(seatFileName);
+    string line;
+    while (getline(file, line)) {
+        stringstream ss(line);
+        Seat seat;
+        string priceStr, bookedStr;
+        getline(ss, (string&)seat.row, ';'); // row
+        ss >> seat.row;
+        ss.ignore(); // ignore ';'
+        ss >> seat.number;
+        ss.ignore();
+        getline(ss, seat.section, ';');
+        getline(ss, priceStr, ';');
+        getline(ss, bookedStr, ';');
+        seat.price = stod(priceStr);
+        seat.isBooked = (bookedStr == "1" || bookedStr == "true");
+        seats.push_back(seat);
+    }
+    return seats;
+}
+
+// Utility: Save seats back to file
+void saveSeats(const string& seatFileName, const vector<Seat>& seats) {
+    ofstream file(seatFileName);
+    for (const Seat& s : seats) {
+        file << s.row << ";" << s.number << ";" << s.section << ";"
+             << s.price << ";" << (s.isBooked ? 1 : 0) << "\n";
+    }
+}
+
+// Event Registration
+void eventRegistration(const string& userName) {
+    vector<Concert> concerts = loadConcerts("events.txt");
+    if (concerts.empty()) {
+        cout << "No events available.\n";
+        return;
+    }
+
+    cout << "\nAvailable Events:\n";
+    for (size_t i = 0; i < concerts.size(); i++) {
+        cout << i + 1 << ". " << concerts[i].concertName
+             << " by " << concerts[i].artist
+             << " at " << concerts[i].venue
+             << " on " << concerts[i].date << " " << concerts[i].time << "\n";
+    }
+
+    int choice;
+    cout << "Select event number: ";
+    cin >> choice;
+    if (choice < 1 || choice > concerts.size()) {
+        cout << "Invalid choice.\n";
+        return;
+    }
+
+    Concert selected = concerts[choice - 1];
+    string seatFileName = "seats_" + selected.concertName + ".txt";
+    replace(seatFileName.begin(), seatFileName.end(), ' ', '_');
+    vector<Seat> seats = loadSeats(seatFileName);
+
+    // Show available seats
+    cout << "\nSeat Layout (Available seats shown as code):\n";
+    for (char row = 'A'; row <= 'Z'; row++) {
+        bool rowExists = false;
+        for (const Seat& s : seats) {
+            if (s.row == row) {
+                rowExists = true;
+                if (s.isBooked) cout << "[XX] ";
+                else cout << "[" << s.row << s.number << "] ";
+            }
+        }
+        if (rowExists) cout << "\n";
+    }
+
+    // Seat selection
+    vector<Seat> selectedSeats;
+    string seatCode;
+    while (true) {
+        cout << "Enter seat code to select (or 'done' to finish): ";
+        cin >> seatCode;
+        if (seatCode == "done") break;
+
+        char row = seatCode[0];
+        int number = stoi(seatCode.substr(1));
+        bool found = false;
+
+        for (Seat& s : seats) {
+            if (s.row == row && s.number == number && !s.isBooked) {
+                selectedSeats.push_back(s);
+                s.isBooked = true; // reserve in memory
+                found = true;
+                cout << "Seat " << seatCode << " added.\n";
+                break;
+            }
+        }
+        if (!found) cout << "Seat not available.\n";
+    }
+
+    if (selectedSeats.empty()) {
+        cout << "No seats selected.\n";
+        return;
+    }
+
+    // Calculate total price
+    double totalPrice = 0;
+    for (const Seat& s : selectedSeats) totalPrice += s.price;
+
+    // Checkout
+    if (checkoutAndPayment(userName, selected, selectedSeats, totalPrice)) {
+        saveSeats(seatFileName, seats);
+        cout << "Booking confirmed!\n";
+    } else {
+        cout << "Payment failed.\n";
+    }
+}
+
+// Checkout and Payment
+bool checkoutAndPayment(const string& userName, const Concert& concert, const vector<Seat>& selectedSeats, double totalPrice) {
+    clearScreen();
+    cout << "=== CHECKOUT ===\n";
+    cout << "User: " << userName << "\n";
+    cout << "Concert: " << concert.concertName << " by " << concert.artist << "\n";
+    cout << "Seats:\n";
+    for (const Seat& s : selectedSeats) {
+        cout << s.row << s.number << " (" << s.section << ") - RM " << s.price << "\n";
+    }
+    cout << "TOTAL: RM " << totalPrice << "\n";
+
+    cout << "\nSelect payment method:\n1. Credit Card\n2. Online Banking\n3. E-Wallet\nChoice: ";
+    int payChoice;
+    cin >> payChoice;
+
+    string confirm;
+    cout << "Confirm payment (yes/no): ";
+    cin >> confirm;
+    if (toLowerSTR(confirm) == "yes") {
+        cout << "Processing payment...\n";
+        Sleep(2000);
+        cout << "Payment successful.\n";
+        return true;
+    }
+    return false;
 }
