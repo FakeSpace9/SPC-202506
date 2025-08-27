@@ -217,15 +217,13 @@ bool isEmailValid(string email)
     regex userEmailRegex(R"(^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$)");
     return regex_match(email, userEmailRegex);
 }
-
 void userLogin()
 {
     clearScreen();
     string password;
     string userName;
-    bool pwMatch;
+    bool pwMatch = false;
     vector<User> users;
-    bool existUser = false;
 
     // create or open file first
     ofstream ensureFile("userDetails.txt", ios::app);
@@ -243,13 +241,16 @@ void userLogin()
     cout << "User Login\n";
 
     // read user data to vector
-
-    while (!readFile.eof())
+    while (getline(readFile, line))
     {
-        getline(readFile, line);
+        if (line.empty())
+            continue;
         User u;
         int pos1 = line.find(";");
         int pos2 = line.rfind(";");
+
+        if (pos1 == string::npos || pos2 == string::npos || pos1 == pos2)
+            continue;
 
         u.username = line.substr(0, pos1);
         u.email = line.substr(pos1 + 1, pos2 - pos1 - 1);
@@ -271,10 +272,12 @@ void userLogin()
             return; // exit the program
         }
 
+        bool existUser = false;
         for (int i = 0; i < users.size(); i++)
         {
             if (users[i].username == userName)
             {
+                existUser = true;
                 if (users[i].password == password)
                 {
                     pwMatch = true;
