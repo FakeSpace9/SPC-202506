@@ -60,6 +60,13 @@ int main()
     return 0;
 }
 
+
+void clearScreen()
+{
+    cout << "\033[2J\033[1;1H";
+}
+
+
 void mainMenu()
 {
     int choice;
@@ -92,11 +99,6 @@ void mainMenu()
         mainMenu();
         break;
     }
-}
-
-void clearScreen()
-{
-    cout << "\033[2J\033[1;1H";
 }
 
 void userRegister()
