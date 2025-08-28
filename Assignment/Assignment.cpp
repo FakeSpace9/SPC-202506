@@ -699,6 +699,8 @@ void saveSeats(const string& seatFileName, const vector<Seat>& seats) {
 
 // event registration function
 void eventRegistration(const string& userName) {
+    size_t consumed = 0;
+    int number;
     vector<Concert> concerts = loadConcerts("events.txt");
     if (concerts.empty()) {
         cout << "No events available.\n";
@@ -736,23 +738,65 @@ void eventRegistration(const string& userName) {
 
     // Show seats
     cout << "\nSeat Layout (Available seats shown as code):\n";
+
+    // Collect prices per section for the legend
+    double vipPrice = -1.0, regPrice = -1.0, normalPrice = -1.0;
+    for (const Seat& s : seats) {
+        if (s.section == "VIP" && vipPrice < 0)
+            vipPrice = s.price;
+        else if (s.section == "Regular" && regPrice < 0)
+            regPrice = s.price;
+        else if (s.section == "Normal" && normalPrice < 0)
+            normalPrice = s.price;
+    }
+
+    // Print rows A to Z, grouped by section
+    string lastSectionPrinted = "";
     for (char row = 'A'; row <= 'Z'; row++) {
-        bool rowExists = false;
+        // Gather seats for this row
+        vector<const Seat*> rowSeats;
+        string rowSection;
         for (const Seat& s : seats) {
             if (s.row == row) {
-                rowExists = true;
-                if (s.isBooked) cout << "[XX] ";
-                else cout << "[" << s.row << s.number << "] ";
+                if (rowSection.empty()) rowSection = s.section;
+                rowSeats.push_back(&s);
             }
         }
-        if (rowExists) cout << "\n";
+        if (rowSeats.empty()) continue;
+
+        // Sort seats in this row by seat number for clean display
+        sort(rowSeats.begin(), rowSeats.end(),
+             [](const Seat* a, const Seat* b) { return a->number < b->number; });
+
+        // Print section header when it changes
+        if (rowSection != lastSectionPrinted) {
+            cout << "\n=== " << rowSection << " ===\n";
+            lastSectionPrinted = rowSection;
+        }
+
+        // Print row label and seats
+        cout << row << "  ";
+        for (const Seat* sp : rowSeats) {
+            if (sp->isBooked) cout << "[XX] ";
+            else cout << "[" << sp->row << sp->number << "] ";
+        }
+        cout << "\n";
     }
+
+    // Legend and price summary
+    cout << "\nNote: [A1] Available   [XX] Booked\n";
+    cout << "Prices: ";
+    bool firstOut = true;
+    if (vipPrice >= 0)     { cout << (firstOut ? "" : "  ") << "VIP RM " << vipPrice; firstOut = false; }
+    if (regPrice >= 0)     { cout << (firstOut ? "" : "  ") << "Regular RM " << regPrice; firstOut = false; }
+    if (normalPrice >= 0)  { cout << (firstOut ? "" : "  ") << "Normal RM " << normalPrice; }
+    cout << "\n";
 
     // Seat selection
     vector<Seat> selectedSeats;
     string seatCode;
     while (true) {
-        cout << "Enter seat code to select, 'done' to finish, or 'back' to cancel: ";
+        cout << "Enter seat code to select, 'done' to proceed checkout, or 'back' to cancel: ";
         cin >> seatCode;
         string seatLower = toLowerSTR(seatCode);
         if (seatLower == "back")
@@ -767,11 +811,16 @@ void eventRegistration(const string& userName) {
         seatCode[0] = static_cast<char>(toupper(seatCode[0]));
 
         char row = seatCode[0];
-        int number;
+        string numPart = seatCode.substr(1);
+
         try {
-            number = stoi(seatCode.substr(1));
+            number = stoi(seatCode.substr(1), &consumed);
         } catch (...) {
-            cout << "Invalid seat number.\n";
+            cout << "Invalid seat code.\n";
+            continue;
+        }
+        if (consumed != numPart.size()) {
+            cout << "Invalid seat code.\n";
             continue;
         }
 
@@ -867,7 +916,6 @@ bool checkoutAndPayment(const string &userName, const Concert &concert, const ve
                 Sleep(700);
             }
 
-            Sleep(1000);
             clearScreen();
             cout << "\nPayment approved!\n";
 
