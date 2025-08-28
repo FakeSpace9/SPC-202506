@@ -806,11 +806,6 @@ void eventRegistration(const string& userName) {
     }
 }
 
-#include <thread>
-#include <chrono>
-#include <fstream>
-#include <limits>
-
 bool checkoutAndPayment(const string &userName, const Concert &concert, const vector<Seat> &selectedSeats, double totalPrice) {
     while (true) {
         cout << "\n=== CHECKOUT ===\n";
