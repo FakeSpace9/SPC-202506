@@ -649,7 +649,7 @@ void displayUpcomingConcert()
     }
 
     Concert c = concerts[index];
-    cout << "COMING SOON\n";
+    cout << "-----------------------------------\nCOMING SOON\n";
     cout << "Title:  " << c.concertName << "\n";
     cout << "Artist: " << c.artist << "\n";
     cout << "Venue:  " << c.venue << "\n";
@@ -801,8 +801,18 @@ void eventRegistration(const string& userName) {
     if (checkoutAndPayment(userName, selected, selectedSeats, totalPrice)) {
         saveSeats(seatFileName, seats);
         cout << "Booking confirmed!\n";
+        cout << "Returning to user menu in 3 second\n";
+        for (int i = 0; i < 3; i++) {
+            cout << ".";
+            cout.flush();
+            Sleep(700);
+        }
+
+        clearScreen();
     } else {
         cout << "Payment failed.\n";
+        Sleep(3000);
+        clearScreen();
     }
 }
 
@@ -849,12 +859,16 @@ bool checkoutAndPayment(const string &userName, const Concert &concert, const ve
                 continue;
             }
 
+            clearScreen();
             cout << "\nProcessing payment";
             for (int i = 0; i < 3; i++) {
                 cout << ".";
                 cout.flush();
-                this_thread::sleep_for(chrono::milliseconds(700));
+                Sleep(700);
             }
+
+            Sleep(1000);
+            clearScreen();
             cout << "\nPayment approved!\n";
 
             cout << "\n===== RECEIPT =====\n";
