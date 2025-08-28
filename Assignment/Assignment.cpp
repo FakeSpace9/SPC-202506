@@ -9,6 +9,10 @@
 #include <sstream>
 #include <regex>
 #include <cctype>
+#include <thread>
+#include <chrono>
+#include <fstream>
+#include <limits>
 #include <ctype.h>
 #include <ctime>
 
@@ -79,7 +83,7 @@ void mainMenu()
     cout << "Welcome to blah blah blah\n"
          << endl;
     displayUpcomingConcert();
-    cout << "\n1. User Registeration.\n2. Login\n3. Exit\nEnter your choice : ";
+    cout << "\n1. User Registration.\n2. Login\n3. Exit\nEnter your choice : ";
 
     cin >> choice;
 
@@ -156,7 +160,7 @@ void userRegister()
         {
             cout << "Username must be at least 3 characters long.\n";
         }
-        else if (exists) // prompt user name taken
+        else if (exists) // prompt username taken
         {
             cout << "Username already taken. Please choose another.\n";
         }
@@ -345,11 +349,11 @@ void adminMenu(string userName)
 void userMenu(string userName)
 {
     int choice;
+    while (true)
+    {
     cout << "\nWelcome " << userName << "!" << endl;
     cout << "1. Event Register\n2. Profile\n4. Logout and exit.";
     // profile is to view past ticket also with update email and password
-    while (true)
-    {
         cout << "\nEnter your choice :";
         cin >> choice;
         switch (choice)
@@ -657,22 +661,25 @@ void displayUpcomingConcert()
 }
 
 // Utility: Load seats from file
-vector<Seat> loadSeats(const string& seatFileName) {
+vector<Seat> loadSeats(const string &seatFileName) {
     vector<Seat> seats;
     ifstream file(seatFileName);
     string line;
     while (getline(file, line)) {
         stringstream ss(line);
+        string rowStr;
         Seat seat;
         string priceStr, bookedStr;
-        getline(ss, (string&)seat.row, ';'); // row
-        ss >> seat.row;
-        ss.ignore(); // ignore ';'
-        ss >> seat.number;
-        ss.ignore();
+
+        getline(ss, rowStr, ';');
+        seat.row = rowStr.empty() ? '?' : rowStr[0];
+        string numStr;
+        getline(ss, numStr, ';');
+        seat.number = stoi(numStr);
         getline(ss, seat.section, ';');
         getline(ss, priceStr, ';');
         getline(ss, bookedStr, ';');
+
         seat.price = stod(priceStr);
         seat.isBooked = (bookedStr == "1" || bookedStr == "true");
         seats.push_back(seat);
@@ -680,7 +687,8 @@ vector<Seat> loadSeats(const string& seatFileName) {
     return seats;
 }
 
-// Utility: Save seats back to file
+
+// Save seats back to file
 void saveSeats(const string& seatFileName, const vector<Seat>& seats) {
     ofstream file(seatFileName);
     for (const Seat& s : seats) {
@@ -689,7 +697,7 @@ void saveSeats(const string& seatFileName, const vector<Seat>& seats) {
     }
 }
 
-// Event Registration
+// event registration function
 void eventRegistration(const string& userName) {
     vector<Concert> concerts = loadConcerts("events.txt");
     if (concerts.empty()) {
@@ -697,6 +705,7 @@ void eventRegistration(const string& userName) {
         return;
     }
 
+    // Concert selection
     cout << "\nAvailable Events:\n";
     for (size_t i = 0; i < concerts.size(); i++) {
         cout << i + 1 << ". " << concerts[i].concertName
@@ -704,11 +713,18 @@ void eventRegistration(const string& userName) {
              << " at " << concerts[i].venue
              << " on " << concerts[i].date << " " << concerts[i].time << "\n";
     }
+    cout << "0. Back\n";
 
     int choice;
-    cout << "Select event number: ";
-    cin >> choice;
-    if (choice < 1 || choice > concerts.size()) {
+    cout << "Select event number (or 0 to go back): ";
+    if (!(cin >> choice)) {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Invalid input.\n";
+        return;
+    }
+    if (choice == 0) return; // back to previous menu
+    if (choice < 1 || choice > (int)concerts.size()) {
         cout << "Invalid choice.\n";
         return;
     }
@@ -718,7 +734,7 @@ void eventRegistration(const string& userName) {
     replace(seatFileName.begin(), seatFileName.end(), ' ', '_');
     vector<Seat> seats = loadSeats(seatFileName);
 
-    // Show available seats
+    // Show seats
     cout << "\nSeat Layout (Available seats shown as code):\n";
     for (char row = 'A'; row <= 'Z'; row++) {
         bool rowExists = false;
@@ -736,20 +752,36 @@ void eventRegistration(const string& userName) {
     vector<Seat> selectedSeats;
     string seatCode;
     while (true) {
-        cout << "Enter seat code to select (or 'done' to finish): ";
+        cout << "Enter seat code to select, 'done' to finish, or 'back' to cancel: ";
         cin >> seatCode;
-        if (seatCode == "done") break;
+        string seatLower = toLowerSTR(seatCode);
+        if (seatLower == "back")
+            return;
+        if (seatLower == "done")
+            break;
+        if (seatCode.size() < 2) {
+            cout << "Invalid code format.\n";
+            continue;
+        }
+
+        seatCode[0] = static_cast<char>(toupper(seatCode[0]));
 
         char row = seatCode[0];
-        int number = stoi(seatCode.substr(1));
-        bool found = false;
+        int number;
+        try {
+            number = stoi(seatCode.substr(1));
+        } catch (...) {
+            cout << "Invalid seat number.\n";
+            continue;
+        }
 
+        bool found = false;
         for (Seat& s : seats) {
             if (s.row == row && s.number == number && !s.isBooked) {
                 selectedSeats.push_back(s);
-                s.isBooked = true; // reserve in memory
-                found = true;
+                s.isBooked = true;
                 cout << "Seat " << seatCode << " added.\n";
+                found = true;
                 break;
             }
         }
@@ -761,11 +793,11 @@ void eventRegistration(const string& userName) {
         return;
     }
 
-    // Calculate total price
+    // ==== Price calculation ====
     double totalPrice = 0;
     for (const Seat& s : selectedSeats) totalPrice += s.price;
 
-    // Checkout
+    // ==== Checkout ====
     if (checkoutAndPayment(userName, selected, selectedSeats, totalPrice)) {
         saveSeats(seatFileName, seats);
         cout << "Booking confirmed!\n";
@@ -774,30 +806,85 @@ void eventRegistration(const string& userName) {
     }
 }
 
-// Checkout and Payment
-bool checkoutAndPayment(const string& userName, const Concert& concert, const vector<Seat>& selectedSeats, double totalPrice) {
-    clearScreen();
-    cout << "=== CHECKOUT ===\n";
-    cout << "User: " << userName << "\n";
-    cout << "Concert: " << concert.concertName << " by " << concert.artist << "\n";
-    cout << "Seats:\n";
-    for (const Seat& s : selectedSeats) {
-        cout << s.row << s.number << " (" << s.section << ") - RM " << s.price << "\n";
-    }
-    cout << "TOTAL: RM " << totalPrice << "\n";
+#include <thread>
+#include <chrono>
+#include <fstream>
+#include <limits>
 
-    cout << "\nSelect payment method:\n1. Credit Card\n2. Online Banking\n3. E-Wallet\nChoice: ";
-    int payChoice;
-    cin >> payChoice;
+bool checkoutAndPayment(const string &userName, const Concert &concert, const vector<Seat> &selectedSeats, double totalPrice) {
+    while (true) {
+        cout << "\n=== CHECKOUT ===\n";
+        cout << "User: " << userName << "\n";
+        cout << "Concert: " << concert.concertName << " on " << concert.date << "\n";
+        cout << "Seats: ";
+        for (auto &s : selectedSeats) cout << s.row << s.number << " ";
+        cout << "\nTOTAL: RM " << totalPrice << "\n\n";
 
-    string confirm;
-    cout << "Confirm payment (yes/no): ";
-    cin >> confirm;
-    if (toLowerSTR(confirm) == "yes") {
-        cout << "Processing payment...\n";
-        Sleep(2000);
-        cout << "Payment successful.\n";
-        return true;
+        cout << "Select payment method:\n"
+             << "0. Back to seat selection\n"
+             << "1. Credit/Debit Card\n"
+             << "2. Online Banking\n"
+             << "3. E‑Wallet\n"
+             << "Enter your choice: ";
+
+        int method;
+        if (!(cin >> method) || method < 0 || method > 3) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid payment method.\n";
+            continue;
+        }
+        if (method == 0) return false; // back to seat selection
+
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        string detail;
+
+        while (true) {
+            if (method == 1) {
+                cout << "Enter card number (or type 'back'): ";
+            } else if (method == 2) {
+                cout << "Enter bank name (or type 'back'): ";
+            } else {
+                cout << "Enter e‑wallet ID/number (or type 'back'): ";
+            }
+            getline(cin, detail);
+            if (detail == "back") break; // go back to choose method
+            if (detail.empty()) {
+                cout << "Input cannot be empty.\n";
+                continue;
+            }
+
+            cout << "\nProcessing payment";
+            for (int i = 0; i < 3; i++) {
+                cout << ".";
+                cout.flush();
+                this_thread::sleep_for(chrono::milliseconds(700));
+            }
+            cout << "\nPayment approved!\n";
+
+            cout << "\n===== RECEIPT =====\n";
+            cout << "Customer: " << userName << "\n";
+            cout << "Concert: " << concert.concertName << "\n";
+            cout << "Date: " << concert.date << "\nSeats: ";
+            for (auto &s : selectedSeats) cout << s.row << s.number << " ";
+            cout << "\nTotal Paid: RM " << totalPrice << "\n";
+            cout << "Payment Method: " << (method == 1 ? "Card" : method == 2 ? "Online Banking" : "E‑Wallet") << "\n";
+            cout << "===================\n";
+
+            ofstream hist("purchase_history.txt", ios::app);
+            if (hist) {
+                hist << userName << ";"
+                     << concert.concertName << ";"
+                     << concert.date << ";";
+                for (size_t i = 0; i < selectedSeats.size(); i++) {
+                    hist << selectedSeats[i].row << selectedSeats[i].number;
+                    if (i < selectedSeats.size() - 1) hist << ",";
+                }
+                hist << ";" << totalPrice << ";"
+                     << (method == 1 ? "Card" : method == 2 ? "OnlineBanking" : "EWallet")
+                     << "\n";
+            }
+            return true; // payment done
+        }
     }
-    return false;
 }
