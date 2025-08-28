@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <string>
 #include <vector>
@@ -19,25 +18,21 @@
 using namespace std;
 
 
-
-struct User
-{
+struct User {
     string username;
     string password;
     string email;
 };
 
-struct Seat
-{
-    char row;       // A, B, C...
-    int number;     // 1–10
+struct Seat {
+    char row; // A, B, C...
+    int number; // 1–10
     string section; // VIP / Regular / Economy
     double price;
     bool isBooked;
 };
 
-struct Concert
-{
+struct Concert {
     string concertName;
     string artist;
     string venue;
@@ -46,71 +41,81 @@ struct Concert
 };
 
 vector<Concert> loadConcerts(const string &filename);
+
 void mainMenu();
+
 void clearScreen();
+
 void userRegister();
+
 void userLogin();
+
 bool isEmailValid(string email);
+
 void userMenu(string userName);
+
 void adminMenu(string userName);
+
 string toLowerSTR(string strings);
+
 void createEventSeats();
+
 bool isFutureDate(string dateStr);
+
 bool timeValid(const string &timeStr);
+
 void displayUpcomingConcert();
+
 void eventRegistration(const string &userName);
-bool checkoutAndPayment(const string &userName, const Concert &concert, const vector<Seat> &selectedSeats, double totalPrice);
+
+bool checkoutAndPayment(const string &userName, const Concert &concert, const vector<Seat> &selectedSeats,
+                        double totalPrice);
 
 // main function
-int main()
-{
+int main() {
     mainMenu();
     return 0;
 }
 
 
-void clearScreen()
-{
+void clearScreen() {
     cout << "\033[2J\033[1;1H";
 }
 
 
-void mainMenu()
-{
+void mainMenu() {
     int choice;
 
     clearScreen();
     cout << "Welcome to blah blah blah\n"
-         << endl;
+            << endl;
     displayUpcomingConcert();
-    cout << "\n1. User Registration.\n2. Login\n3. Exit\nEnter your choice : ";
+    cout << "1. User Registration.\n2. Login\n3. Exit\nEnter your choice : ";
 
     cin >> choice;
 
-    switch (choice)
-    {
-    case 1:
-        userRegister();
-        break;
+    switch (choice) {
+        case 1:
+            userRegister();
+            break;
 
-    case 2:
-        userLogin();
-        break;
+        case 2:
+            userLogin();
+            break;
 
-    case 3:
-        return;
+        case 3:
+            return;
 
-    default:
-        cout << "Invalid option, Please try again.";
-        Sleep(3000);
-        clearScreen();
-        mainMenu();
-        break;
+        default:
+            cout << "Invalid option, Please try again in 3 second.";
+            Sleep(3000);
+            clearScreen();
+            mainMenu();
+            break;
     }
 }
 
-void userRegister()
-{
+void userRegister() {
     cout << "User Registration";
     clearScreen();
     User newUser;
@@ -120,8 +125,7 @@ void userRegister()
     vector<User> users;
     ifstream readFile("userDetails.txt");
     string line;
-    while (!readFile.eof())
-    {
+    while (!readFile.eof()) {
         getline(readFile, line);
         User u;
         int pos1 = line.find(";");
@@ -135,81 +139,66 @@ void userRegister()
     readFile.close();
 
     // validation for username
-    while (true)
-    {
-        cout << "Enter Username: ";
+    while (true) {
+        cout << "Enter Username (back to return) : ";
         cin >> newUser.username;
 
-        if (toLowerSTR(newUser.username) == "admin")
-        {
+        if (toLowerSTR(newUser.username) == "back") {
+            mainMenu();
+        }
+
+        if (toLowerSTR(newUser.username) == "admin") {
             cout << "'ADMIN' is a reserved word. Please try another.\n";
             continue;
         }
 
         bool exists = false;
-        for (int i = 0; i < users.size(); i++)
-        {
-            if (users[i].username == newUser.username)
-            {
+        for (int i = 0; i < users.size(); i++) {
+            if (users[i].username == newUser.username) {
                 exists = true;
                 break;
             }
         }
 
-        if (newUser.username.length() < 3)
-        {
+        if (newUser.username.length() < 3) {
             cout << "Username must be at least 3 characters long.\n";
-        }
-        else if (exists) // prompt username taken
+        } else if (exists) // prompt username taken
         {
             cout << "Username already taken. Please choose another.\n";
-        }
-        else
-        {
+        } else {
             break;
         }
     }
 
     // validation for password
-    while (true)
-    {
+    while (true) {
         cout << "Enter Password: ";
         cin >> newUser.password;
         cout << "Confirm Password: ";
         cin >> confirmPassword;
 
-        if (newUser.password != confirmPassword)
-        {
+        if (newUser.password != confirmPassword) {
             cout << "Passwords do not match. Try again.\n";
-        }
-        else if (newUser.password.length() < 8)
-        {
+        } else if (newUser.password.length() < 8) {
             cout << "Password must be at least 8 characters long.\n";
-        }
-        else
-        {
+        } else {
             break;
         }
     }
 
-    while (true)
-    {
+    while (true) {
         cout << "Enter Email: ";
         cin >> newUser.email;
-        if (!isEmailValid(newUser.email))
-        {
+        if (!isEmailValid(newUser.email)) {
             cout << "Invalid Email format.\n";
-        }
-        else
-        {
+        } else {
             break;
         }
     }
 
     ofstream file; // open or create the file call userDetails
     file.open("userDetails.txt", ios::app);
-    if (!file)
-    {
+    if (!file) {
         cout << "File cannot be open.";
         return;
     }
@@ -222,13 +211,12 @@ void userRegister()
     main(); // back to main menu
 }
 
-bool isEmailValid(string email)
-{
+bool isEmailValid(string email) {
     regex userEmailRegex(R"(^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$)");
     return regex_match(email, userEmailRegex);
 }
-void userLogin()
-{
+
+void userLogin() {
     clearScreen();
     string password;
     string userName;
@@ -241,8 +229,7 @@ void userLogin()
     // try to read file
     ifstream readFile("userDetails.txt");
 
-    if (!readFile)
-    {
+    if (!readFile) {
         cout << "File cannot be open.";
         return;
     }
@@ -251,8 +238,7 @@ void userLogin()
     cout << "User Login\n";
 
     // read user data to vector
-    while (getline(readFile, line))
-    {
+    while (getline(readFile, line)) {
         if (line.empty())
             continue;
         User u;
@@ -269,115 +255,123 @@ void userLogin()
     }
     readFile.close();
 
-    while (!pwMatch)
-    {
-        cout << "Enter your username : ";
+    while (!pwMatch) {
+        cout << "Enter your username (back to return): ";
         cin >> userName;
+        if (toLowerSTR(userName) == "back") {
+            mainMenu();
+        }
+
         cout << "Enter password : ";
         cin >> password;
 
-        if (toLowerSTR(userName) == "admin" && password == "admin")
-        {
+
+        if (toLowerSTR(userName) == "admin" && password == "admin") {
             adminMenu(userName);
             return; // exit the program
         }
 
         bool existUser = false;
-        for (int i = 0; i < users.size(); i++)
-        {
-            if (users[i].username == userName)
-            {
+        for (int i = 0; i < users.size(); i++) {
+            if (users[i].username == userName) {
                 existUser = true;
-                if (users[i].password == password)
-                {
+                if (users[i].password == password) {
                     pwMatch = true;
                     break;
-                }
-                else
-                {
+                } else {
                     clearScreen();
                     cout << "User Login Failed\nPlease try again\n\nUsername or password incorrect.\n";
                 }
             }
         }
-        if (!existUser)
-        {
+        if (!existUser) {
             clearScreen();
             cout << "User Login Failed\nPlease try again\n\nUsername or password incorrect.\n";
         }
     }
-    if (pwMatch)
-    {
+    if (pwMatch) {
         clearScreen();
         cout << "login successful";
         userMenu(userName);
     }
 }
-string toLowerSTR(string strings)
-{
 
+string toLowerSTR(string strings) {
     string result = strings;
     transform(result.begin(), result.end(), result.begin(), ::tolower);
     return result;
 }
-void adminMenu(string userName)
-{
+
+void adminMenu(string userName) {
+    clearScreen();
     int choice;
-    while (true)
-    {
-        clearScreen();
+    while (true) {
         cout << "Welcome " << userName << "!" << endl;
-        cout << "1. Event Creation\n2. Event Monitoring\n3. Event Reporting\n4. Logout and exit.";
+        cout << "1. Event Creation\n2. Event Monitoring\n3. Event Reporting\n4. Logout";
         cout << "\nEnter your choice :";
         cin >> choice;
-        switch (choice)
-        {
-        case 1:
-            createEventSeats();
-            break;
-        case 2:
-            break;
-        case 3:
-            break;
-        case 4:
-            return;
-        default:
-            cout << "Invalid option. Try again.";
-        }
-    }
-}
-void userMenu(string userName)
-{
-    int choice;
-    while (true)
-    {
-    cout << "\nWelcome " << userName << "!" << endl;
-    cout << "1. Event Register\n2. Profile\n4. Logout and exit.";
-    // profile is to view past ticket also with update email and password
-        cout << "\nEnter your choice :";
-        cin >> choice;
-        switch (choice)
-        {
-        case 1:
-                eventRegistration(userName);
+        switch (choice) {
+            case 1:
+                createEventSeats();
                 break;
-        case 2:
-            break;
-        case 3:
-            break;
-        case 4:
-            return;
-        default:
-            cout << "Invalid option. Try again.";
+            case 2:
+                cout << "\nEvent Monitoring is not implemented yet.\n";
+                break;
+            case 3:
+                cout << "\nEvent Monitoring is not implemented yet.\n";
+                break;
+            case 4:
+                clearScreen();
+                cout << "Logout Successful";
+                for (int i = 0; i < 3; i++) {
+                    cout << ".";
+                    cout.flush();
+                    Sleep(700);
+                }
+                mainMenu();
+                break;
+            default:
+                clearScreen();
+                cout << "Invalid option. Try again.\n";
         }
     }
 }
 
-bool isFutureDate(string dateStr)
-{
+void userMenu(string userName) {
+    int choice;
+    while (true) {
+        cout << "\nWelcome " << userName << "!" << endl;
+        cout << "1. Event Register\n2. Profile\n3. Logout";
+        // profile is to view past ticket also with update email and password
+        cout << "\nEnter your choice :";
+        cin >> choice;
+        switch (choice) {
+            case 1:
+                eventRegistration(userName);
+                break;
+            case 2:
+                break;
+            case 3:
+                clearScreen();
+                cout << "Logout Successful";
+                for (int i = 0; i < 3; i++) {
+                    cout << ".";
+                    cout.flush();
+                    Sleep(700);
+                }
+                mainMenu();
+                break;
+            default:
+                clearScreen();
+                cout << "Invalid option. Try again.";
+                choice = 0;
+        }
+    }
+}
+
+bool isFutureDate(string dateStr) {
     // allow using / instead of -
-    for (char &c : dateStr)
-    {
+    for (char &c: dateStr) {
         if (c == '/')
             c = '-';
     }
@@ -389,15 +383,13 @@ bool isFutureDate(string dateStr)
     ss >> day >> dash1 >> month >> dash2 >> year;
 
     // Check if day, month and year are separated
-    if (dash1 != '-' || dash2 != '-')
-    {
+    if (dash1 != '-' || dash2 != '-') {
         cout << "Please use \"/\" or \"-\".\n";
         return false;
     }
 
     // Basic range check
-    if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1900)
-    {
+    if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1900) {
         cout << "Please enter a valid date.\n";
         return false;
     }
@@ -422,11 +414,9 @@ bool isFutureDate(string dateStr)
     return false;
 }
 
-bool timeValid(const string &timeStr)
-{
+bool timeValid(const string &timeStr) {
     // must use :
-    if (timeStr.find(':') == string::npos)
-    {
+    if (timeStr.find(':') == string::npos) {
         cout << "Please use HH:MM as the format.\n";
         return false;
     }
@@ -437,86 +427,94 @@ bool timeValid(const string &timeStr)
     ss >> hour >> colon >> minute;
 
     // Check basic time format
-    if (colon != ':' || hour < 0 || hour > 23 || minute < 0 || minute > 59)
-    {
+    if (colon != ':' || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
         cout << "Hours must be 00-23 and minutes 00-59.\n";
         return false;
     }
     return true;
 }
 
-void createEventSeats()
-{
-
+void createEventSeats() {
     clearScreen();
     string eventName, artistName, eventVenue, eventDate, startTime, endTime;
+    int rows, columns, vipRows, regularRows;
     cin.ignore();
-    cout << "Enter concert Name: ";
-    getline(cin, eventName);
-    cout << "Enter Artist Name(s): ";
-    getline(cin, artistName);
-    cout << "Enter concert Venue: ";
-    getline(cin, eventVenue);
+    do {
+        cout << "Enter concert Name (back to cancel this process): ";
+        getline(cin, eventName);
+        if (toLowerSTR(eventName) == "back") {
+            clearScreen();
+            return;
+        }
+        if (eventName.empty()) {
+            cout << "Event name cannot be empty. Please enter again\n";
+        }
+    } while (eventName.empty());
 
-    do
-    {
-        cout << "Enter concert date (dd-mm-yyyy or d-m-yyyy): ";
+    do {
+        cout << "Enter Artist Name(s): ";
+        getline(cin, artistName);
+        if (artistName.empty()) {
+            cout << "Event name cannot be empty. Please enter again\n";
+        }
+    } while (artistName.empty());
+
+    do {
+        cout << "Enter concert Venue: ";
+        getline(cin, eventVenue);
+        if (eventVenue.empty()) {
+            cout << "Event name cannot be empty. Please enter again\n";
+        }
+    } while (eventVenue.empty());
+
+    do {
+        cout << "Enter concert date (dd-mm-yyyy): ";
         getline(cin, eventDate);
     } while (!isFutureDate(eventDate));
 
-    do
-    {
+    do {
         cout << "Enter start time (HH:MM): ";
         getline(cin, startTime);
     } while (!timeValid(startTime));
 
-    do
-    {
+    do {
         cout << "Enter End Time (HH:MM): ";
         getline(cin, endTime);
     } while (!timeValid(endTime));
 
-    int rows, columns, vipRows, regularRows;
+
     cout << "Enter number of rows (max 26): ";
     cin >> rows;
-    while (rows < 10)
-    {
+    while (rows < 10) {
         cout << "At least 10 rows are required. Please enter again: ";
         cin >> rows;
     }
-    while (rows > 26)
-    {
+    while (rows > 26) {
         cout << "Maximum 26 rows. Please enter again: ";
         cin >> rows;
     }
 
     cout << "Enter number of seats/row: ";
     cin >> columns;
-    while (columns < 10)
-    {
+    while (columns < 10) {
         cout << "At least 10 seats per row. Please enter again: ";
         cin >> columns;
     }
-    while (columns > 25)
-    {
+    while (columns > 25) {
         cout << "Cannot exceed 25 seats per row. Please enter again: ";
         cin >> columns;
     }
 
     // categorize rows
-    while (true)
-    {
+    while (true) {
         cout << "Enter number of VIP rows: ";
         cin >> vipRows;
         cout << "Enter number of Regular rows: ";
         cin >> regularRows;
 
-        if (vipRows + regularRows > rows)
-        {
+        if (vipRows + regularRows > rows) {
             cout << "VIP + Regular rows exceed total rows. Try again.\n";
-        }
-        else
-        {
+        } else {
             break;
         }
     }
@@ -529,8 +527,7 @@ void createEventSeats()
     clearScreen();
     cout << "Preview:\n\n";
 
-    for (int i = 0; i < rows; i++)
-    {
+    for (int i = 0; i < rows; i++) {
         if (i == 0)
             cout << "VIP:\n";
         else if (i == vipRows)
@@ -538,9 +535,8 @@ void createEventSeats()
         else if (i == vipRows + regularRows)
             cout << "\nNormal:\n";
 
-        for (int j = 1; j <= columns; j++)
-        {
-            cout << "[" << (char)('A' + i) << j << "] ";
+        for (int j = 1; j <= columns; j++) {
+            cout << "[" << (char) ('A' + i) << j << "] ";
         }
         cout << endl;
     }
@@ -556,8 +552,7 @@ void createEventSeats()
     cin >> normalPrice;
 
     vector<Seat> seatList;
-    for (int i = 0; i < rows; i++)
-    {
+    for (int i = 0; i < rows; i++) {
         string section;
         if (i < vipRows)
             section = "VIP";
@@ -566,8 +561,7 @@ void createEventSeats()
         else
             section = "Normal";
 
-        for (int j = 1; j <= columns; j++)
-        {
+        for (int j = 1; j <= columns; j++) {
             Seat seat;
             seat.row = 'A' + i;
             seat.number = j;
@@ -588,38 +582,35 @@ void createEventSeats()
     // Save events
     ofstream eventFile("events.txt", ios::app);
     eventFile << eventName << ";" << artistName << ";" << eventVenue << ";"
-              << eventDate << ";" << startTime << ";" << endTime << ";"
-              << seatFileName << endl;
+            << eventDate << ";" << startTime << ";" << endTime << ";"
+            << seatFileName << endl;
     eventFile.close();
 
     // file validation
     ofstream file(seatFileName);
-    if (!file)
-    {
+    if (!file) {
         cout << "Error creating seat file.\n";
         return;
     }
 
     // Save seats
-    for (Seat s : seatList)
-    {
+    for (Seat s: seatList) {
         file << s.row << ";" << s.number << ";" << s.section << ";"
-             << s.price << ";" << s.isBooked << "\n";
+                << s.price << ";" << s.isBooked << "\n";
     }
     file.close();
 
     cout << "\nEvent and seat layout with pricing saved successfully.\nBack to admin menu in 3 second.";
     Sleep(3000);
+    clearScreen();
 }
 
-vector<Concert> loadConcerts(const string &filename)
-{
+vector<Concert> loadConcerts(const string &filename) {
     vector<Concert> concerts;
     ifstream file(filename);
     string line;
 
-    while (getline(file, line))
-    {
+    while (getline(file, line)) {
         stringstream ss(line);
         string concertName, artist, venue, date, time;
 
@@ -635,13 +626,11 @@ vector<Concert> loadConcerts(const string &filename)
     return concerts;
 }
 
-void displayUpcomingConcert()
-{
+void displayUpcomingConcert() {
     static size_t index = 0; // remembers last shown concert
     vector<Concert> concerts = loadConcerts("events.txt");
 
-    if (concerts.empty())
-    {
+    if (concerts.empty()) {
         cout << "=================================\n";
         cout << "No upcoming event.\n";
         cout << "=================================\n\n";
@@ -689,16 +678,16 @@ vector<Seat> loadSeats(const string &seatFileName) {
 
 
 // Save seats back to file
-void saveSeats(const string& seatFileName, const vector<Seat>& seats) {
+void saveSeats(const string &seatFileName, const vector<Seat> &seats) {
     ofstream file(seatFileName);
-    for (const Seat& s : seats) {
+    for (const Seat &s: seats) {
         file << s.row << ";" << s.number << ";" << s.section << ";"
-             << s.price << ";" << (s.isBooked ? 1 : 0) << "\n";
+                << s.price << ";" << (s.isBooked ? 1 : 0) << "\n";
     }
 }
 
 // event registration function
-void eventRegistration(const string& userName) {
+void eventRegistration(const string &userName) {
     size_t consumed = 0;
     int number;
     vector<Concert> concerts = loadConcerts("events.txt");
@@ -711,9 +700,9 @@ void eventRegistration(const string& userName) {
     cout << "\nAvailable Events:\n";
     for (size_t i = 0; i < concerts.size(); i++) {
         cout << i + 1 << ". " << concerts[i].concertName
-             << " by " << concerts[i].artist
-             << " at " << concerts[i].venue
-             << " on " << concerts[i].date << " " << concerts[i].time << "\n";
+                << " by " << concerts[i].artist
+                << " at " << concerts[i].venue
+                << " on " << concerts[i].date << " " << concerts[i].time << "\n";
     }
     cout << "0. Back\n";
 
@@ -726,7 +715,7 @@ void eventRegistration(const string& userName) {
         return;
     }
     if (choice == 0) return; // back to previous menu
-    if (choice < 1 || choice > (int)concerts.size()) {
+    if (choice < 1 || choice > (int) concerts.size()) {
         cout << "Invalid choice.\n";
         return;
     }
@@ -741,7 +730,7 @@ void eventRegistration(const string& userName) {
 
     // Collect prices per section for the legend
     double vipPrice = -1.0, regPrice = -1.0, normalPrice = -1.0;
-    for (const Seat& s : seats) {
+    for (const Seat &s: seats) {
         if (s.section == "VIP" && vipPrice < 0)
             vipPrice = s.price;
         else if (s.section == "Regular" && regPrice < 0)
@@ -754,9 +743,9 @@ void eventRegistration(const string& userName) {
     string lastSectionPrinted = "";
     for (char row = 'A'; row <= 'Z'; row++) {
         // Gather seats for this row
-        vector<const Seat*> rowSeats;
+        vector<const Seat *> rowSeats;
         string rowSection;
-        for (const Seat& s : seats) {
+        for (const Seat &s: seats) {
             if (s.row == row) {
                 if (rowSection.empty()) rowSection = s.section;
                 rowSeats.push_back(&s);
@@ -766,7 +755,7 @@ void eventRegistration(const string& userName) {
 
         // Sort seats in this row by seat number for clean display
         sort(rowSeats.begin(), rowSeats.end(),
-             [](const Seat* a, const Seat* b) { return a->number < b->number; });
+             [](const Seat *a, const Seat *b) { return a->number < b->number; });
 
         // Print section header when it changes
         if (rowSection != lastSectionPrinted) {
@@ -776,7 +765,7 @@ void eventRegistration(const string& userName) {
 
         // Print row label and seats
         cout << row << "  ";
-        for (const Seat* sp : rowSeats) {
+        for (const Seat *sp: rowSeats) {
             if (sp->isBooked) cout << "[XX] ";
             else cout << "[" << sp->row << sp->number << "] ";
         }
@@ -787,9 +776,15 @@ void eventRegistration(const string& userName) {
     cout << "\nNote: [A1] Available   [XX] Booked\n";
     cout << "Prices: ";
     bool firstOut = true;
-    if (vipPrice >= 0)     { cout << (firstOut ? "" : "  ") << "VIP RM " << vipPrice; firstOut = false; }
-    if (regPrice >= 0)     { cout << (firstOut ? "" : "  ") << "Regular RM " << regPrice; firstOut = false; }
-    if (normalPrice >= 0)  { cout << (firstOut ? "" : "  ") << "Normal RM " << normalPrice; }
+    if (vipPrice >= 0) {
+        cout << (firstOut ? "" : "  ") << "VIP RM " << vipPrice;
+        firstOut = false;
+    }
+    if (regPrice >= 0) {
+        cout << (firstOut ? "" : "  ") << "Regular RM " << regPrice;
+        firstOut = false;
+    }
+    if (normalPrice >= 0) { cout << (firstOut ? "" : "  ") << "Normal RM " << normalPrice; }
     cout << "\n";
 
     // Seat selection
@@ -825,7 +820,7 @@ void eventRegistration(const string& userName) {
         }
 
         bool found = false;
-        for (Seat& s : seats) {
+        for (Seat &s: seats) {
             if (s.row == row && s.number == number && !s.isBooked) {
                 selectedSeats.push_back(s);
                 s.isBooked = true;
@@ -844,7 +839,7 @@ void eventRegistration(const string& userName) {
 
     // ==== Price calculation ====
     double totalPrice = 0;
-    for (const Seat& s : selectedSeats) totalPrice += s.price;
+    for (const Seat &s: selectedSeats) totalPrice += s.price;
 
     // ==== Checkout ====
     if (checkoutAndPayment(userName, selected, selectedSeats, totalPrice)) {
@@ -865,21 +860,22 @@ void eventRegistration(const string& userName) {
     }
 }
 
-bool checkoutAndPayment(const string &userName, const Concert &concert, const vector<Seat> &selectedSeats, double totalPrice) {
+bool checkoutAndPayment(const string &userName, const Concert &concert, const vector<Seat> &selectedSeats,
+                        double totalPrice) {
     while (true) {
         cout << "\n=== CHECKOUT ===\n";
         cout << "User: " << userName << "\n";
         cout << "Concert: " << concert.concertName << " on " << concert.date << "\n";
         cout << "Seats: ";
-        for (auto &s : selectedSeats) cout << s.row << s.number << " ";
+        for (auto &s: selectedSeats) cout << s.row << s.number << " ";
         cout << "\nTOTAL: RM " << totalPrice << "\n\n";
 
         cout << "Select payment method:\n"
-             << "0. Back to seat selection\n"
-             << "1. Credit/Debit Card\n"
-             << "2. Online Banking\n"
-             << "3. E‑Wallet\n"
-             << "Enter your choice: ";
+                << "0. Back to seat selection\n"
+                << "1. Credit/Debit Card\n"
+                << "2. Online Banking\n"
+                << "3. E‑Wallet\n"
+                << "Enter your choice: ";
 
         int method;
         if (!(cin >> method) || method < 0 || method > 3) {
@@ -923,7 +919,7 @@ bool checkoutAndPayment(const string &userName, const Concert &concert, const ve
             cout << "Customer: " << userName << "\n";
             cout << "Concert: " << concert.concertName << "\n";
             cout << "Date: " << concert.date << "\nSeats: ";
-            for (auto &s : selectedSeats) cout << s.row << s.number << " ";
+            for (auto &s: selectedSeats) cout << s.row << s.number << " ";
             cout << "\nTotal Paid: RM " << totalPrice << "\n";
             cout << "Payment Method: " << (method == 1 ? "Card" : method == 2 ? "Online Banking" : "E‑Wallet") << "\n";
             cout << "===================\n";
@@ -931,15 +927,15 @@ bool checkoutAndPayment(const string &userName, const Concert &concert, const ve
             ofstream hist("purchase_history.txt", ios::app);
             if (hist) {
                 hist << userName << ";"
-                     << concert.concertName << ";"
-                     << concert.date << ";";
+                        << concert.concertName << ";"
+                        << concert.date << ";";
                 for (size_t i = 0; i < selectedSeats.size(); i++) {
                     hist << selectedSeats[i].row << selectedSeats[i].number;
                     if (i < selectedSeats.size() - 1) hist << ",";
                 }
                 hist << ";" << totalPrice << ";"
-                     << (method == 1 ? "Card" : method == 2 ? "OnlineBanking" : "EWallet")
-                     << "\n";
+                        << (method == 1 ? "Card" : method == 2 ? "OnlineBanking" : "EWallet")
+                        << "\n";
             }
             return true; // payment done
         }
