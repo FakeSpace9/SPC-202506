@@ -636,7 +636,6 @@ void displayUpcomingConcert() {
         cout << "=================================\n\n";
         return;
     }
-
     Concert c = concerts[index];
     cout << "-----------------------------------\nCOMING SOON\n";
     cout << "Title:  " << c.concertName << "\n";
@@ -850,12 +849,8 @@ void eventRegistration(const string &userName) {
     if (checkoutAndPayment(userName, selected, selectedSeats, totalPrice)) {
         saveSeats(seatFileName, seats);
         cout << "Booking confirmed!\n";
-        cout << "Returning to user menu in 3 second\n";
-        for (int i = 0; i < 3; i++) {
-            cout << ".";
-            cout.flush();
-            Sleep(700);
-        }
+        cout << "Press enter to return to user menu...";
+        cin.get();
 
         clearScreen();
     } else {
