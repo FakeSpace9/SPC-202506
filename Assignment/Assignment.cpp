@@ -1149,7 +1149,7 @@ void updateEventTimes(EventStatus& status, const Concert& concert) {
     
 }
 
-// Get current status 
+// Get current status (consider manual settings)
 string getStatusWithOverride(const EventStatus& status) {
     if (!status.manualStatus.empty()) {
         return status.manualStatus;
@@ -1363,7 +1363,7 @@ void displayStatusUpdateMenu(EventStatus& status, const Concert& concert) {
 void displayMonitoring(const Concert& c) {
     clearScreen();
 
-    // Load status
+    // Load or create event status
     EventStatus status;
     loadEventStatus(c.concertName, status);
     
