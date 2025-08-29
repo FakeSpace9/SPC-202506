@@ -795,8 +795,13 @@ void eventRegistration(const string &userName) {
         string seatLower = toLowerSTR(seatCode);
         if (seatLower == "back")
             return;
-        if (seatLower == "done")
+        if (seatLower == "done") {
+            if (selectedSeats.empty()) {
+                cout << "No seat selected please select at least one seat before proceeding.\n";
+                continue;
+            }
             break;
+        }
         if (seatCode.size() < 2) {
             cout << "Invalid code format.\n";
             continue;
@@ -873,7 +878,7 @@ bool checkoutAndPayment(const string &userName, const Concert &concert, const ve
                 << "0. Back to seat selection\n"
                 << "1. Credit/Debit Card\n"
                 << "2. Online Banking\n"
-                << "3. E‑Wallet\n"
+                << "3. E-Wallet\n"
                 << "Enter your choice: ";
 
         int method;
@@ -894,7 +899,7 @@ bool checkoutAndPayment(const string &userName, const Concert &concert, const ve
             } else if (method == 2) {
                 cout << "Enter bank name (or type 'back'): ";
             } else {
-                cout << "Enter e‑wallet ID/number (or type 'back'): ";
+                cout << "Enter e-wallet ID/number (or type 'back'): ";
             }
             getline(cin, detail);
             if (detail == "back") break; // go back to choose method
