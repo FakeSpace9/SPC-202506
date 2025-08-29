@@ -1,0 +1,7 @@
+EventName=qwer
+ManualStatus=
+GateTime=04:00
+EntryTime=04:30
+StartTime=5:00
+EndTime=6:00
+Date=30-8-2025
