@@ -887,11 +887,10 @@ void saveSeats(const string &seatFileName, const vector<Seat> &seats) {
 }
 
 void displayAvailableEvent(const string &userName) {
-
-
+    int choice;
     vector<Concert> concerts = loadConcerts("events.txt");
+    clearScreen();
     while (true) {
-        clearScreen();
         if (concerts.empty()) {
             cout << "No events available.\n";
             return;
@@ -907,24 +906,22 @@ void displayAvailableEvent(const string &userName) {
         }
         cout << "0. Back\n";
 
-        int choice;
+
         cout << "Select event number (or 0 to go back): ";
-        if (!(cin >> choice)) {
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "Invalid input.\n";
-            return;
-        }
+        cin.clear();
+        cin >> choice;
         if (choice == 0) {
             clearScreen();
             return;
         } // back to previous menu
         if (choice < 1 || choice > (int) concerts.size()) {
-            cout << "Invalid choice.\n";
-            return;
+            clearScreen();
+            cout << "Invalid choice. Please try again\n";
+        }else {
+            clearScreen();
+            eventRegistration(userName,choice);
         }
 
-        eventRegistration(userName,choice);
     }
 }
 
@@ -1011,6 +1008,7 @@ void eventRegistration(const string &userName,const int choice) {
         cin >> seatCode;
         string seatLower = toLowerSTR(seatCode);
         if (seatLower == "back") {
+            clearScreen();
             return;
         }
 
