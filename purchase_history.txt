@@ -1,7 +1,0 @@
-test;haha;09-09-2025;A1;200;OnlineBanking
-test;hello;09-09-2025;A2;100;EWallet
-test;hello;09-09-2025;A4;100;OnlineBanking
-test;qwer;30-8-2025;A3;12;EWallet
-test;hello;09-09-2025;A5;100;EWallet
-test;haha;09-09-2025;A3;200;OnlineBanking
-test;hello;09-09-2025;A6;100;EWallet

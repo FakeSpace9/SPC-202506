@@ -896,6 +896,7 @@ void displayAvailableEvent(const string &userName) {
             return;
         }
 
+
         // Concert selection
         cout << "\nAvailable Events:\n";
         for (size_t i = 0; i < concerts.size(); i++) {
@@ -1003,9 +1004,11 @@ void eventRegistration(const string &userName,const int choice) {
     // Seat selection
     vector<Seat> selectedSeats;
     string seatCode;
+    cin.get();
     while (true) {
-        cout << "Enter seat code to select, 'done' to proceed checkout, or 'back' to cancel: ";
-        cin >> seatCode;
+        cout << "\n*Enter 'done' to proceed checkout, or 'back' to cancel *\nEnter seat code(s) to select (separate with space) :";
+
+        getline(cin, seatCode);
         string seatLower = toLowerSTR(seatCode);
         if (seatLower == "back") {
             clearScreen();
@@ -1018,38 +1021,63 @@ void eventRegistration(const string &userName,const int choice) {
             }
             break;
         }
-        if (seatCode.size() < 2) {
-            cout << "Invalid code format.\n";
-            continue;
-        }
 
-        seatCode[0] = static_cast<char>(toupper(seatCode[0]));
+        cout <<endl;
 
-        char row = seatCode[0];
-        string numPart = seatCode.substr(1);
+        stringstream ss(seatCode);
+        string code;
 
-        try {
-            number = stoi(seatCode.substr(1), &consumed);
-        } catch (...) {
-            cout << "Invalid seat code.\n";
-            continue;
-        }
-        if (consumed != numPart.size()) {
-            cout << "Invalid seat code.\n";
-            continue;
-        }
-
-        bool found = false;
-        for (Seat &s: seats) {
-            if (s.row == row && s.number == number && !s.isBooked) {
-                selectedSeats.push_back(s);
-                s.isBooked = true;
-                cout << "Seat " << seatCode << " added.\n";
-                found = true;
-                break;
+        while (ss >> code) {
+            // Regex validation
+            regex seatPattern("^[a-zA-Z]([1-9]|[1-9][0-9])$");
+            if (!regex_match(code, seatPattern)) {
+                cout << "Invalid seat code: " << code << endl;
+                continue;
             }
+
+            // Normalize first letter to uppercase
+            code[0] = static_cast<char>(toupper(code[0]));
+
+            char row = code[0];
+            string numPart = code.substr(1);
+
+            try {
+                number = stoi(numPart, &consumed);
+            } catch (...) {
+                cout << "Invalid seat code: " << code << endl;
+                continue;
+            }
+            if (consumed != numPart.size()) {
+                cout << "Invalid seat code: " << code << endl;
+                continue;
+            }
+
+            bool found = false;
+            for (Seat &s: seats) {
+                //check is this seat available or not
+                if (s.row == row && s.number == number && !s.isBooked) {
+                    // below is to check if already chosen in this session
+                    bool alreadyChosen = false;
+                    for (const Seat &sel : selectedSeats) {
+                        if (sel.row == row && sel.number == number) {
+                            alreadyChosen = true;
+                            break;
+                        }
+                    }
+
+                    if (alreadyChosen) {
+                        cout << "Seat " << code << " already selected.\n";
+                    } else {
+                        selectedSeats.push_back(s);
+                        cout << "Seat " << code << " added.\n";
+                    }
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) cout << "Seat not available.\n";
         }
-        if (!found) cout << "Seat not available.\n";
+
     }
 
     if (selectedSeats.empty()) {
@@ -1064,6 +1092,15 @@ void eventRegistration(const string &userName,const int choice) {
     // ==== Checkout ====
     clearScreen();
     if (checkoutAndPayment(userName, selected, selectedSeats, totalPrice)) {
+        for (Seat &s : seats) {
+            for (const Seat &sel : selectedSeats) {
+                if (s.row == sel.row && s.number == sel.number) {
+                    s.isBooked = true;
+                }
+            }
+        }
+
+        // Save updated seat data
         saveSeats(seatFileName, seats);
         cout << "Booking confirmed!\n";
         cout << "Press enter to return to user menu...";
