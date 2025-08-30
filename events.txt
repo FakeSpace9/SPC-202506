@@ -1,3 +1,1 @@
-haha;haha;haha;09-09-2025;12:00;14:00;seats_haha.txt
-hello;bye;he;09-09-2025;12:00;14:00;seats_hello.txt
-qwer;qwer;qw;30-8-2025;5:00;6:00;seats_qwer.txt
+cnm;cnm;123;09-09-2025;12:00;14:00;seats_cnm.txt
