@@ -130,7 +130,7 @@ void eventRegistration(const string &userName,const int choice);
 
 bool checkoutAndPayment(const string &userName, const Concert &concert, const vector<Seat> &selectedSeats,
                         double totalPrice);
-
+string generateBookingID(const string &concertName);
 string getPasswordInput();
 
 void eventFeedback(string userName);
@@ -889,15 +889,14 @@ void saveSeats(const string &seatFileName, const vector<Seat> &seats) {
 void displayAvailableEvent(const string &userName) {
     int choice;
     vector<Concert> concerts = loadConcerts("events.txt");
-    clearScreen();
+    if (concerts.empty()) {
+        cout << "No events available.\n";
+        return;
+    }
+
     while (true) {
-        if (concerts.empty()) {
-            cout << "No events available.\n";
-            return;
-        }
-
-
         // Concert selection
+        clearScreen();
         cout << "\nAvailable Events:\n";
         for (size_t i = 0; i < concerts.size(); i++) {
             cout << i + 1 << ". " << concerts[i].concertName
@@ -909,22 +908,30 @@ void displayAvailableEvent(const string &userName) {
 
 
         cout << "Select event number (or 0 to go back): ";
-        cin.clear();
-        cin >> choice;
+        if (!(cin >> choice)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input. Please enter a number.\n";
+            Sleep(1500);
+            continue; // re‑prompt
+        }
+
         if (choice == 0) {
             clearScreen();
             return;
         } // back to previous menu
         if (choice < 1 || choice > (int) concerts.size()) {
-            clearScreen();
             cout << "Invalid choice. Please try again\n";
-        }else {
-            clearScreen();
-            eventRegistration(userName,choice);
+            Sleep(1500);
+            continue;
+        }
+        clearScreen();
+        eventRegistration(userName, choice);
         }
 
     }
-}
+
+
 
 // event registration function
 void eventRegistration(const string &userName,const int choice) {
@@ -1171,7 +1178,11 @@ bool checkoutAndPayment(const string &userName, const Concert &concert, const ve
             clearScreen();
             cout << "\nPayment approved!\n";
 
+            string bookingID = generateBookingID(concert.concertName);
+            cout << "Your Booking ID: " << bookingID << "\n";
+
             cout << "\n===== RECEIPT =====\n";
+            cout << "Booking ID: " << bookingID << "\n";
             cout << "Customer: " << userName << "\n";
             cout << "Concert: " << concert.concertName << "\n";
             cout << "Date: " << concert.date << "\nSeats: ";
@@ -1184,7 +1195,8 @@ bool checkoutAndPayment(const string &userName, const Concert &concert, const ve
             if (hist) {
                 hist << userName << ";"
                         << concert.concertName << ";"
-                        << concert.date << ";";
+                        << concert.date << ";"
+                        << bookingID << ";";
                 for (size_t i = 0; i < selectedSeats.size(); i++) {
                     hist << selectedSeats[i].row << selectedSeats[i].number;
                     if (i < selectedSeats.size() - 1) hist << ",";
@@ -1197,6 +1209,26 @@ bool checkoutAndPayment(const string &userName, const Concert &concert, const ve
         }
     }
 }
+
+string generateBookingID(const string &concertName) {
+    static map<string, int> bookingCounters; // keeps count per concert
+
+    // Make prefix from first 2 letters of concert name (uppercase)
+    string prefix = concertName.substr(0, 2);
+    for (char &c : prefix) c = toupper(c);
+
+    // If first time for this concert, start at 10000
+    if (bookingCounters.find(prefix) == bookingCounters.end()) {
+        bookingCounters[prefix] = 10000;
+    }
+
+    // Increment counter
+    bookingCounters[prefix]++;
+
+    // Return prefix + number
+    return prefix + to_string(bookingCounters[prefix]);
+}
+
 
 void eventMonitoring() {
     vector<Concert> concerts = loadConcerts("events.txt");
