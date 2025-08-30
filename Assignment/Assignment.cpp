@@ -70,6 +70,8 @@ struct Booking {
     string eventStatus;
 };
 
+void displayAvailableEvent(const string &userName);
+
 void viewBookingHistory(const string &userName);
 
 void searchBookings(const vector<Booking> &bookings, const string &userName);
@@ -112,7 +114,7 @@ bool isEmailValid(string email);
 
 void userMenu(string userName);
 
-void adminMenu(string userName);
+void adminMenu();
 
 string toLowerSTR(string strings);
 
@@ -124,7 +126,7 @@ bool timeValid(const string &timeStr);
 
 void displayUpcomingConcert();
 
-void eventRegistration(const string &userName);
+void eventRegistration(const string &userName,const int choice);
 
 bool checkoutAndPayment(const string &userName, const Concert &concert, const vector<Seat> &selectedSeats,
                         double totalPrice);
@@ -240,7 +242,7 @@ void userRegister() {
             newUser.password = getPasswordInput();
             if (newUser.password.length() < 8) {
                 cout << "Password must be at least 8 characters long.\n";
-            }else {
+            } else {
                 isPassG8 = true;
                 break;
             }
@@ -250,8 +252,7 @@ void userRegister() {
 
         if (newUser.password != confirmPassword) {
             cout << "Passwords do not match. Try again.\n";
-        }
-        else{break;}
+        } else { break; }
     }
 
 
@@ -362,7 +363,7 @@ void userLogin() {
 
 
         if (toLowerSTR(userName) == "admin" && password == "admin") {
-            adminMenu(userName);
+            adminMenu();
             return; // exit the program
         }
 
@@ -406,9 +407,11 @@ void eventFeedback() {
         cout << "========================\n\n";
 
         vector<Concert> concerts = loadConcerts("events.txt");
-        vector<pair<string, int> > eventFeedbacks;// save as eventname, number of feedback. eventFeedbacks is the name of vector
+        vector<pair<string, int> > eventFeedbacks;
+        // save as eventname, number of feedback. eventFeedbacks is the name of vector
 
-        for (const Concert &concert: concerts) {// const ensure not modify the file
+        for (const Concert &concert: concerts) {
+            // const ensure not modify the file
             //for each concert in the list of concerts, give me a read-only reference called concert that I can use inside the loop.
             string issueFile = "issues_" + concert.concertName + ".txt";
             replace(issueFile.begin(), issueFile.end(), ' ', '_');
@@ -469,19 +472,17 @@ void eventFeedback() {
                 cout << "\nPress Enter to continue...";
                 cin.ignore();
                 cin.get();
-
-            }else if (choice == 0){
+            } else if (choice == 0) {
                 feedbackExist = true;
                 break;
-            }
-            else {
-                cout<< "Invalid choice. Try again.\n";
+            } else {
+                cout << "Invalid choice. Try again.\n";
             }
         }
     }
 }
 
-void adminMenu(string userName) {
+void adminMenu() {
     int choice;
     while (true) {
         clearScreen();
@@ -539,7 +540,7 @@ void userMenu(string userName) {
         if (cin >> choice) {
             switch (choice) {
                 case 1:
-                    eventRegistration(userName);
+                    displayAvailableEvent(userName);
                     break;
                 case 2:
                     viewBookingHistory(userName);
@@ -885,40 +886,55 @@ void saveSeats(const string &seatFileName, const vector<Seat> &seats) {
     }
 }
 
+void displayAvailableEvent(const string &userName) {
+
+
+    vector<Concert> concerts = loadConcerts("events.txt");
+    while (true) {
+        clearScreen();
+        if (concerts.empty()) {
+            cout << "No events available.\n";
+            return;
+        }
+
+        // Concert selection
+        cout << "\nAvailable Events:\n";
+        for (size_t i = 0; i < concerts.size(); i++) {
+            cout << i + 1 << ". " << concerts[i].concertName
+                    << " by " << concerts[i].artist
+                    << " at " << concerts[i].venue
+                    << " on " << concerts[i].date << " " << concerts[i].startTime << "\n";
+        }
+        cout << "0. Back\n";
+
+        int choice;
+        cout << "Select event number (or 0 to go back): ";
+        if (!(cin >> choice)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input.\n";
+            return;
+        }
+        if (choice == 0) {
+            clearScreen();
+            return;
+        } // back to previous menu
+        if (choice < 1 || choice > (int) concerts.size()) {
+            cout << "Invalid choice.\n";
+            return;
+        }
+
+        eventRegistration(userName,choice);
+    }
+}
+
 // event registration function
-void eventRegistration(const string &userName) {
-    clearScreen();
+void eventRegistration(const string &userName,const int choice) {
     size_t consumed = 0;
     int number;
     vector<Concert> concerts = loadConcerts("events.txt");
-    if (concerts.empty()) {
-        cout << "No events available.\n";
-        return;
-    }
 
-    // Concert selection
-    cout << "\nAvailable Events:\n";
-    for (size_t i = 0; i < concerts.size(); i++) {
-        cout << i + 1 << ". " << concerts[i].concertName
-                << " by " << concerts[i].artist
-                << " at " << concerts[i].venue
-                << " on " << concerts[i].date << " " << concerts[i].startTime << "\n";
-    }
-    cout << "0. Back\n";
 
-    int choice;
-    cout << "Select event number (or 0 to go back): ";
-    if (!(cin >> choice)) {
-        cin.clear();
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        cout << "Invalid input.\n";
-        return;
-    }
-    if (choice == 0) return; // back to previous menu
-    if (choice < 1 || choice > (int) concerts.size()) {
-        cout << "Invalid choice.\n";
-        return;
-    }
 
     Concert selected = concerts[choice - 1];
     string seatFileName = "seats_" + selected.concertName + ".txt";
@@ -994,12 +1010,13 @@ void eventRegistration(const string &userName) {
         cout << "Enter seat code to select, 'done' to proceed checkout, or 'back' to cancel: ";
         cin >> seatCode;
         string seatLower = toLowerSTR(seatCode);
-        if (seatLower == "back")
+        if (seatLower == "back") {
             return;
+        }
+
         if (seatLower == "done") {
             if (selectedSeats.empty()) {
                 cout << "No seat selected please select at least one seat before proceeding.\n";
-                continue;
             }
             break;
         }
@@ -1061,6 +1078,7 @@ void eventRegistration(const string &userName) {
         clearScreen();
     }
 }
+
 
 bool checkoutAndPayment(const string &userName, const Concert &concert, const vector<Seat> &selectedSeats,
                         double totalPrice) {
