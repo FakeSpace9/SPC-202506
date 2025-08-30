@@ -1,5 +1,5 @@
 #include <iostream>
-#include <string> 
+#include <string>
 #include <vector>
 #include <algorithm>
 #include <windows.h>
@@ -12,6 +12,7 @@
 #include <chrono>
 #include <limits>
 #include <ctype.h>
+#include <conio.h>
 #include <ctime>
 #include <iomanip>
 
@@ -32,8 +33,7 @@ struct Seat {
     bool isBooked;
 };
 
-struct Concert
-{
+struct Concert {
     string concertName;
     string artist;
     string venue;
@@ -43,6 +43,7 @@ struct Concert
 };
 
 vector<Concert> loadConcerts(const string &filename);
+
 struct EventStatus {
     string eventName;
     string manualStatus;
@@ -50,7 +51,7 @@ struct EventStatus {
     string entryTime;
     string startTime;
     string endTime;
-    string date;             
+    string date;
 };
 
 struct TimeEvent {
@@ -66,23 +67,35 @@ struct Booking {
     double totalPrice;
     string paymentMethod;
     string bookingDateTime;
-    string eventStatus; 
+    string eventStatus;
 };
 
 void viewBookingHistory(const string &userName);
+
 void searchBookings(const vector<Booking> &bookings, const string &userName);
+
 void sortBookingsByDate(vector<Booking> &bookings);
+
 vector<Booking> loadUserBookings(const string &userName);
+
 string determineEventStatus(const string &eventDate);
+
 void displayBookingDetail(const Booking &booking, const string &userName);
+
 Concert getBookingConcertDetails(const string &eventName);
 
-void saveEventStatus(const EventStatus& status);
-void loadEventStatus(const string& eventName, EventStatus& status);
-void updateEventTimes(EventStatus& status, const Concert& concert);
-void displayStatusUpdateMenu(EventStatus& status, const Concert& concert);
-void displayMonitoring(const Concert& c);
+void saveEventStatus(const EventStatus &status);
+
+void loadEventStatus(const string &eventName, EventStatus &status);
+
+void updateEventTimes(EventStatus &status, const Concert &concert);
+
+void displayStatusUpdateMenu(EventStatus &status, const Concert &concert);
+
+void displayMonitoring(const Concert &c);
+
 string getCurrentDateTime();
+
 void eventMonitoring();
 
 void fileComplaint(const string &userName, const string &eventName, const string &userType);
@@ -116,6 +129,10 @@ void eventRegistration(const string &userName);
 bool checkoutAndPayment(const string &userName, const Concert &concert, const vector<Seat> &selectedSeats,
                         double totalPrice);
 
+string getPasswordInput();
+
+void eventFeedback(string userName);
+
 // main function
 int main() {
     mainMenu();
@@ -130,40 +147,33 @@ void clearScreen() {
 
 void mainMenu() {
     int choice;
-    bool validInput = false;
 
-    while (!validInput) {
-        clearScreen();
-        cout << "Welcome to blah blah blah\n" << endl;
-        displayUpcomingConcert();
-        cout << "1. User Registration.\n2. Login\n3. Exit\nEnter your choice : ";
+    clearScreen();
+    cout << "Welcome to blah blah blah\n"
+            << endl;
+    displayUpcomingConcert();
+    cout << "1. User Registration.\n2. Login\n3. Exit\nEnter your choice : ";
 
-        if (cin >> choice) {
-            if (choice == 1 || choice == 2 || choice == 3) {
-                validInput = true;
-                
-                switch (choice) {
-                    case 1:
-                        userRegister();
-                        break;
+    cin >> choice;
 
-                    case 2:
-                        userLogin();
-                        break;
+    switch (choice) {
+        case 1:
+            userRegister();
+            break;
 
-                    case 3:
-                        return;
-                }
-            } else {
-                cout << "Invalid option. Please enter 1, 2, or 3. Try again in 2 seconds.";
-                Sleep(3000);
-            }
-        } else {
-            cout << "Invalid input. Please enter a number (1, 2, or 3). Try again in 2 seconds.";
-            cin.clear(); 
-            cin.ignore(10000, '\n'); 
-            Sleep(2000);
-        }
+        case 2:
+            userLogin();
+            break;
+
+        case 3:
+            return;
+
+        default:
+            cout << "Invalid option, Please try again in 3 second.";
+            Sleep(3000);
+            clearScreen();
+            mainMenu();
+            break;
     }
 }
 
@@ -224,19 +234,26 @@ void userRegister() {
 
     // validation for password
     while (true) {
-        cout << "Enter Password: ";
-        cin >> newUser.password;
+        bool isPassG8 = false;
+        do {
+            cout << "Enter Password: ";
+            newUser.password = getPasswordInput();
+            if (newUser.password.length() < 8) {
+                cout << "Password must be at least 8 characters long.\n";
+            }else {
+                isPassG8 = true;
+                break;
+            }
+        } while (!isPassG8);
         cout << "Confirm Password: ";
-        cin >> confirmPassword;
+        confirmPassword = getPasswordInput();
 
         if (newUser.password != confirmPassword) {
             cout << "Passwords do not match. Try again.\n";
-        } else if (newUser.password.length() < 8) {
-            cout << "Password must be at least 8 characters long.\n";
-        } else {
-            break;
         }
+        else{break;}
     }
+
 
     while (true) {
         cout << "Enter Email: ";
@@ -268,12 +285,36 @@ bool isEmailValid(string email) {
     return regex_match(email, userEmailRegex);
 }
 
+string getPasswordInput() {
+    string password;
+    char ch;
+    while (true) {
+        ch = _getch(); // get character without showing on console
+        if (ch == 13) {
+            // Enter key
+            cout << endl;
+            break;
+        } else if (ch == 8) {
+            // Backspace
+            if (!password.empty()) {
+                cout << "\b \b"; // erase last character from console
+                password.pop_back();
+            }
+        } else {
+            password.push_back(ch);
+            cout << '*'; // print * instead of actual character
+        }
+    }
+    return password;
+}
+
 void userLogin() {
     clearScreen();
     string password;
     string userName;
     bool pwMatch = false;
     vector<User> users;
+    clearScreen();
 
     // create or open file first
     ofstream ensureFile("userDetails.txt", ios::app);
@@ -287,7 +328,9 @@ void userLogin() {
     }
     string line;
 
+    cout << "==================\n";
     cout << "User Login\n";
+    cout << "==================\n";
 
     // read user data to vector
     while (getline(readFile, line)) {
@@ -315,7 +358,7 @@ void userLogin() {
         }
 
         cout << "Enter password : ";
-        cin >> password;
+        password = getPasswordInput();
 
 
         if (toLowerSTR(userName) == "admin" && password == "admin") {
@@ -354,54 +397,140 @@ string toLowerSTR(string strings) {
     return result;
 }
 
+void eventFeedback() {
+    bool feedbackExist = false;
+    while (!feedbackExist) {
+        clearScreen();
+        cout << "========================\n";
+        cout << "Event Feedback\n";
+        cout << "========================\n\n";
+
+        vector<Concert> concerts = loadConcerts("events.txt");
+        vector<pair<string, int> > eventFeedbacks;// save as eventname, number of feedback. eventFeedbacks is the name of vector
+
+        for (const Concert &concert: concerts) {// const ensure not modify the file
+            //for each concert in the list of concerts, give me a read-only reference called concert that I can use inside the loop.
+            string issueFile = "issues_" + concert.concertName + ".txt";
+            replace(issueFile.begin(), issueFile.end(), ' ', '_');
+
+            ifstream file(issueFile);
+            if (file) {
+                int count = 0;
+                string line;
+                while (getline(file, line)) {
+                    if (!line.empty()) count++;
+                }
+                if (count > 0) {
+                    eventFeedbacks.push_back({concert.concertName, count});
+                }
+                file.close();
+            }
+        }
+
+        if (eventFeedbacks.empty()) {
+            cout << "No feedback found for any events.\n";
+            cout << "Press Enter to continue...";
+            cin.ignore();
+            cin.get();
+            return;
+        }
+
+        cout << "Events with Feedback:\n";
+        for (size_t i = 0; i < eventFeedbacks.size(); i++) {
+            cout << (i + 1) << ". " << eventFeedbacks[i].first
+                    << " (" << eventFeedbacks[i].second << " feedback(s))\n";
+        }
+
+
+        int choice;
+        bool validChoice = false;
+
+        while (!validChoice) {
+            cout << "\nEnter event number to view feedback (0 to return): ";
+            cin >> choice;
+            if (choice > 0 && choice <= eventFeedbacks.size()) {
+                validChoice = true;
+                clearScreen();
+                string selectedEvent = eventFeedbacks[choice - 1].first;
+                string issueFile = "issues_" + selectedEvent + ".txt";
+                replace(issueFile.begin(), issueFile.end(), ' ', '_');
+
+                cout << "Feedback for: " << selectedEvent << "\n\n";
+
+                ifstream file(issueFile);
+                string line;
+                while (getline(file, line)) {
+                    if (!line.empty()) {
+                        cout << line << "\n";
+                    }
+                }
+                file.close();
+
+                cout << "\nPress Enter to continue...";
+                cin.ignore();
+                cin.get();
+
+            }else if (choice == 0){
+                feedbackExist = true;
+                break;
+            }
+            else {
+                cout<< "Invalid choice. Try again.\n";
+            }
+        }
+    }
+}
+
 void adminMenu(string userName) {
-    clearScreen();
     int choice;
     while (true) {
-        cout << "Welcome " << userName << "!" << endl;
-        cout << "1. Event Creation\n2. Event Monitoring\n3. Event Reporting\n4. Logout";
+        clearScreen();
+        cout << "Welcome Admin !" << endl;
+        cout << "1. Event Creation\n2. Event Monitoring\n3. Event Reporting\n4. Event Feedback\n0. Logout";
         cout << "\nEnter your choice :";
 
         if (cin >> choice) {
-        switch (choice) {
-            case 1:
-                createEventSeats();
-                break;
-            case 2:
-                eventMonitoring();
-                break;
-            case 3:
-                cout << "\nEvent Monitoring is not implemented yet.\n";
-                break;
-            case 4:
-                clearScreen();
-                cout << "Logout Successful";
-                for (int i = 0; i < 3; i++) {
-                    cout << ".";
-                    cout.flush();
-                    Sleep(700);
-                }
-                mainMenu();
-                return;
-            default:
-                clearScreen();
-                cout << "Invalid option. Try again.\n";
-        }
-    }else{
-        clearScreen();
+            switch (choice) {
+                case 1:
+                    createEventSeats();
+                    break;
+                case 2:
+                    eventMonitoring();
+                    break;
+                case 3:
+                    cout << "\nEvent Monitoring is not implemented yet.\n";
+                    break;
+                case 4:
+                    eventFeedback();
+                    break;
+                case 0:
+                    clearScreen();
+                    cout << "Logout Successful";
+                    for (int i = 0; i < 3; i++) {
+                        cout << ".";
+                        cout.flush();
+                        Sleep(700);
+                    }
+                    mainMenu();
+                    return;
+                default:
+                    clearScreen();
+                    cout << "Invalid option. Try again.\n";
+            }
+        } else {
+            clearScreen();
             cout << "Invalid option. Try again.\n";
             choice = 0;
             cin.clear();
-            cin.ignore(10000, '\n'); 
-     }
+            cin.ignore(10000, '\n');
+        }
     }
 }
 
 void userMenu(string userName) {
     int choice;
-    
-    while (true) {
 
+    while (true) {
         cout << "\nWelcome " << userName << "!" << endl;
         cout << "1. Event Register\n2. Booking History\n3. Logout";
         // profile is to view past ticket also with update email and password
@@ -409,34 +538,33 @@ void userMenu(string userName) {
 
         if (cin >> choice) {
             switch (choice) {
-             case 1:
+                case 1:
                     eventRegistration(userName);
                     break;
-               case 2:
+                case 2:
                     viewBookingHistory(userName);
                     break;
                 case 3:
                     clearScreen();
-                  cout << "Logout Successful";
+                    cout << "Logout Successful";
                     for (int i = 0; i < 3; i++) {
                         cout << ".";
                         cout.flush();
-                      Sleep(700);
+                        Sleep(700);
                     }
                     mainMenu();
                     return;
-               default:
+                default:
                     clearScreen();
                     cout << "Invalid option. Try again.";
-                 choice = 0;
+                    choice = 0;
             }
-        }else{
+        } else {
             clearScreen();
             cout << "Invalid option. Try again.";
             choice = 0;
             cin.clear();
-            cin.ignore(10000, '\n'); 
-
+            cin.ignore(10000, '\n');
         }
     }
 }
@@ -684,7 +812,7 @@ vector<Concert> loadConcerts(const string &filename) {
 
     while (getline(file, line)) {
         stringstream ss(line);
-        string concertName, artist, venue, date,  startTime,endTime;
+        string concertName, artist, venue, date, startTime, endTime;
 
         getline(ss, concertName, ';');
         getline(ss, artist, ';');
@@ -694,7 +822,7 @@ vector<Concert> loadConcerts(const string &filename) {
         getline(ss, endTime, ';');
 
         // Push into vector
-        concerts.push_back({concertName, artist, venue, date, startTime ,endTime});
+        concerts.push_back({concertName, artist, venue, date, startTime, endTime});
     }
     return concerts;
 }
@@ -759,6 +887,7 @@ void saveSeats(const string &seatFileName, const vector<Seat> &seats) {
 
 // event registration function
 void eventRegistration(const string &userName) {
+    clearScreen();
     size_t consumed = 0;
     int number;
     vector<Concert> concerts = loadConcerts("events.txt");
@@ -773,7 +902,7 @@ void eventRegistration(const string &userName) {
         cout << i + 1 << ". " << concerts[i].concertName
                 << " by " << concerts[i].artist
                 << " at " << concerts[i].venue
-                << " on " << concerts[i].date << " " << concerts[i].startTime  << "\n";
+                << " on " << concerts[i].date << " " << concerts[i].startTime << "\n";
     }
     cout << "0. Back\n";
 
@@ -918,6 +1047,7 @@ void eventRegistration(const string &userName) {
     for (const Seat &s: selectedSeats) totalPrice += s.price;
 
     // ==== Checkout ====
+    clearScreen();
     if (checkoutAndPayment(userName, selected, selectedSeats, totalPrice)) {
         saveSeats(seatFileName, seats);
         cout << "Booking confirmed!\n";
@@ -953,6 +1083,7 @@ bool checkoutAndPayment(const string &userName, const Concert &concert, const ve
         if (!(cin >> method) || method < 0 || method > 3) {
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            clearScreen();
             cout << "Invalid payment method.\n";
             continue;
         }
@@ -1013,14 +1144,14 @@ bool checkoutAndPayment(const string &userName, const Concert &concert, const ve
         }
     }
 }
-void eventMonitoring()
-{
+
+void eventMonitoring() {
     vector<Concert> concerts = loadConcerts("events.txt");
-    
+
     while (true) {
         clearScreen();
         cout << "========== EVENT MONITORING ==========\n";
-        
+
         if (concerts.empty()) {
             cout << "NO EVENT. THIS WILL BE BACK";
             for (int i = 0; i < 3; i++) {
@@ -1040,36 +1171,36 @@ void eventMonitoring()
         cout << "Enter choice: ";
 
         int choice;
-        
+
         if (!(cin >> choice)) {
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
             cout << "Invalid input! Please enter a number.\n";
             cout << "Press Enter to try again...";
             cin.get();
-            continue; 
+            continue;
         }
-        
+
         if (choice == 0) {
             clearScreen();
             return;
         }
-        
-        if (choice < 1 || choice > (int)concerts.size()) {
-            cout << "Invalid choice! Please select a number between 1 and " 
-                 << concerts.size() << ".\n";
+
+        if (choice < 1 || choice > (int) concerts.size()) {
+            cout << "Invalid choice! Please select a number between 1 and "
+                    << concerts.size() << ".\n";
             cout << "Press Enter to try again...";
             cin.ignore();
             cin.get();
-            continue; 
+            continue;
         }
 
         displayMonitoring(concerts[choice - 1]);
-        return; 
+        return;
     }
 }
 
-void saveEventStatus(const EventStatus& status) {
+void saveEventStatus(const EventStatus &status) {
     string statusFile = "schedule_" + status.eventName + ".txt";
     replace(statusFile.begin(), statusFile.end(), ' ', '_');
 
@@ -1090,7 +1221,7 @@ void saveEventStatus(const EventStatus& status) {
 }
 
 // Load event status from file
-void loadEventStatus(const string& eventName, EventStatus& status) {
+void loadEventStatus(const string &eventName, EventStatus &status) {
     status.eventName = eventName;
     status.manualStatus = "";
 
@@ -1107,12 +1238,12 @@ void loadEventStatus(const string& eventName, EventStatus& status) {
             string key, value;
 
             if (getline(lineStream, key, '=') && getline(lineStream, value)) {
-                timeEvents.push_back({ key, value }); 
+                timeEvents.push_back({key, value});
             }
         }
         file.close();
 
-        for (const TimeEvent& event : timeEvents) {
+        for (const TimeEvent &event: timeEvents) {
             if (event.key == "ManualStatus") status.manualStatus = event.value;
             else if (event.key == "GateTime") status.gateTime = event.value;
             else if (event.key == "EntryTime") status.entryTime = event.value;
@@ -1124,7 +1255,7 @@ void loadEventStatus(const string& eventName, EventStatus& status) {
 }
 
 // Update event times (if no manual override, use auto calculation)
-void updateEventTimes(EventStatus& status, const Concert& concert) {
+void updateEventTimes(EventStatus &status, const Concert &concert) {
     auto calcTime = [](string t, int minusHour, int minusMin) {
         int h, m;
         char colon;
@@ -1132,25 +1263,27 @@ void updateEventTimes(EventStatus& status, const Concert& concert) {
         ss >> h >> colon >> m;
         // subtract
         m -= minusMin;
-        if (m < 0) { m += 60; h -= 1; }
+        if (m < 0) {
+            m += 60;
+            h -= 1;
+        }
         h -= minusHour;
         if (h < 0) h += 24;
         char buf[6];
         sprintf_s(buf, "%02d:%02d", h, m);
         return string(buf);
-        };
-    status.gateTime = calcTime(concert.startTime, 1, 0);   // gate = start - 1 hour
+    };
+    status.gateTime = calcTime(concert.startTime, 1, 0); // gate = start - 1 hour
     status.entryTime = calcTime(concert.startTime, 0, 30); // entry = start - 30 min
     status.startTime = concert.startTime;
     status.endTime = concert.endTime;
     status.date = concert.date;
 
     saveEventStatus(status);
-    
 }
 
 // Get current status (consider manual settings)
-string getStatusWithOverride(const EventStatus& status) {
+string getStatusWithOverride(const EventStatus &status) {
     if (!status.manualStatus.empty()) {
         return status.manualStatus;
     }
@@ -1164,13 +1297,13 @@ string getStatusWithOverride(const EventStatus& status) {
     sprintf_s(buffer, "%02d:%02d", local.tm_hour, local.tm_min);
     string currentTime(buffer);
 
-    auto toMinutes = [](const string& t) {
+    auto toMinutes = [](const string &t) {
         int h, m;
         char colon;
         stringstream ss(t);
         ss >> h >> colon >> m;
         return h * 60 + m;
-        };
+    };
 
     int cur = toMinutes(currentTime);
     int gate = toMinutes(status.gateTime);
@@ -1192,14 +1325,14 @@ string getCurrentDateTime() {
 
     char buffer[20];
     sprintf_s(buffer, "%02d-%02d-%04d %02d:%02d",
-        local.tm_mday, local.tm_mon + 1, local.tm_year + 1900,
-        local.tm_hour, local.tm_min);
+              local.tm_mday, local.tm_mon + 1, local.tm_year + 1900,
+              local.tm_hour, local.tm_min);
     return string(buffer);
 }
 
-void displayStatusUpdateMenu(EventStatus& status, const Concert& concert) {
+void displayStatusUpdateMenu(EventStatus &status, const Concert &concert) {
     int choice;
-    
+
     while (true) {
         clearScreen();
         cout << "========== UPDATE EVENT STATUS ==========\n";
@@ -1210,8 +1343,8 @@ void displayStatusUpdateMenu(EventStatus& status, const Concert& concert) {
         cout << " 1) Cancelled\n";
         cout << " 2) Postponed\n";
         cout << " 3) Upcoming (manual)\n";
-        cout << " 4) Gate Open (manual)\n";          
-        cout << " 5) Entry In Progress (manual)\n";  
+        cout << " 4) Gate Open (manual)\n";
+        cout << " 5) Entry In Progress (manual)\n";
         cout << " 6) Ongoing (manual)\n";
         cout << " 7) Clear manual override (use Auto)\n";
         cout << " 8) Update Times\n";
@@ -1220,85 +1353,84 @@ void displayStatusUpdateMenu(EventStatus& status, const Concert& concert) {
 
         if (cin >> choice) {
             switch (choice) {
-            case 1:
-                status.manualStatus = "Cancelled";
-                saveEventStatus(status);
-                break;
+                case 1:
+                    status.manualStatus = "Cancelled";
+                    saveEventStatus(status);
+                    break;
 
-            case 2:
-                status.manualStatus = "Postponed";
-                saveEventStatus(status);
-                break;
+                case 2:
+                    status.manualStatus = "Postponed";
+                    saveEventStatus(status);
+                    break;
 
-            case 3:
-                status.manualStatus = "Upcoming (Manual)";
-                saveEventStatus(status);
-                break;
+                case 3:
+                    status.manualStatus = "Upcoming (Manual)";
+                    saveEventStatus(status);
+                    break;
 
-            case 4:
-                status.manualStatus = "Gate Open (Manual)";
-                {
-                    time_t now = time(0);
-                    tm local;
-                    localtime_s(&local, &now);
+                case 4:
+                    status.manualStatus = "Gate Open (Manual)";
+                    {
+                        time_t now = time(0);
+                        tm local;
+                        localtime_s(&local, &now);
 
-                    char timeBuffer[6];
-                    sprintf_s(timeBuffer, "%02d:%02d", local.tm_hour, local.tm_min);
-                    status.gateTime = string(timeBuffer);
+                        char timeBuffer[6];
+                        sprintf_s(timeBuffer, "%02d:%02d", local.tm_hour, local.tm_min);
+                        status.gateTime = string(timeBuffer);
 
-                    char dateBuffer[11];
-                    sprintf_s(dateBuffer, "%02d-%02d-%04d",
-                        local.tm_mday, local.tm_mon + 1, local.tm_year + 1900);
-                    status.date = string(dateBuffer);
-                }
-                saveEventStatus(status);
-                break;
+                        char dateBuffer[11];
+                        sprintf_s(dateBuffer, "%02d-%02d-%04d",
+                                  local.tm_mday, local.tm_mon + 1, local.tm_year + 1900);
+                        status.date = string(dateBuffer);
+                    }
+                    saveEventStatus(status);
+                    break;
 
-            case 5:
-                status.manualStatus = "Entry In Progress (Manual)";
-                {
-                    time_t now = time(0);
-                    tm local;
-                    localtime_s(&local, &now);
+                case 5:
+                    status.manualStatus = "Entry In Progress (Manual)";
+                    {
+                        time_t now = time(0);
+                        tm local;
+                        localtime_s(&local, &now);
 
-                    char timeBuffer[6];
-                    sprintf_s(timeBuffer, "%02d:%02d", local.tm_hour, local.tm_min);
-                    status.entryTime = string(timeBuffer);
+                        char timeBuffer[6];
+                        sprintf_s(timeBuffer, "%02d:%02d", local.tm_hour, local.tm_min);
+                        status.entryTime = string(timeBuffer);
 
-                    char dateBuffer[11];
-                    sprintf_s(dateBuffer, "%02d-%02d-%04d",
-                        local.tm_mday, local.tm_mon + 1, local.tm_year + 1900);
-                    status.date = string(dateBuffer);
-                }
-                saveEventStatus(status);
-                break;
+                        char dateBuffer[11];
+                        sprintf_s(dateBuffer, "%02d-%02d-%04d",
+                                  local.tm_mday, local.tm_mon + 1, local.tm_year + 1900);
+                        status.date = string(dateBuffer);
+                    }
+                    saveEventStatus(status);
+                    break;
 
-            case 6:
-                status.manualStatus = "Ongoing (Manual)";
-                {
-                    time_t now = time(0);
-                    tm local;
-                    localtime_s(&local, &now);
+                case 6:
+                    status.manualStatus = "Ongoing (Manual)";
+                    {
+                        time_t now = time(0);
+                        tm local;
+                        localtime_s(&local, &now);
 
-                    char timeBuffer[6];
-                    sprintf_s(timeBuffer, "%02d:%02d", local.tm_hour, local.tm_min);
-                    status.startTime = string(timeBuffer);
+                        char timeBuffer[6];
+                        sprintf_s(timeBuffer, "%02d:%02d", local.tm_hour, local.tm_min);
+                        status.startTime = string(timeBuffer);
 
-                    char dateBuffer[11];
-                    sprintf_s(dateBuffer, "%02d-%02d-%04d",
-                        local.tm_mday, local.tm_mon + 1, local.tm_year + 1900);
-                    status.date = string(dateBuffer);
-                }
-                saveEventStatus(status);
-                break;
+                        char dateBuffer[11];
+                        sprintf_s(dateBuffer, "%02d-%02d-%04d",
+                                  local.tm_mday, local.tm_mon + 1, local.tm_year + 1900);
+                        status.date = string(dateBuffer);
+                    }
+                    saveEventStatus(status);
+                    break;
 
-            case 7:
-                status.manualStatus = "";
-                updateEventTimes(status, concert);
-                break;
+                case 7:
+                    status.manualStatus = "";
+                    updateEventTimes(status, concert);
+                    break;
 
-            case 8:
-                {
+                case 8: {
                     cout << "\nCurrent Times:\n";
                     cout << "Gate Time : " << status.gateTime << "\n";
                     cout << "Entry Time: " << status.entryTime << "\n";
@@ -1316,7 +1448,7 @@ void displayStatusUpdateMenu(EventStatus& status, const Concert& concert) {
                     int timeChoice;
                     if (cin >> timeChoice) {
                         cin.ignore();
-                        
+
                         if (timeChoice >= 1 && timeChoice <= 4) {
                             string newTime;
                             cout << "Enter new time (HH:MM): ";
@@ -1324,10 +1456,14 @@ void displayStatusUpdateMenu(EventStatus& status, const Concert& concert) {
 
                             if (timeValid(newTime)) {
                                 switch (timeChoice) {
-                                case 1: status.gateTime = newTime; break;
-                                case 2: status.entryTime = newTime; break;
-                                case 3: status.startTime = newTime; break;
-                                case 4: status.endTime = newTime; break;
+                                    case 1: status.gateTime = newTime;
+                                        break;
+                                    case 2: status.entryTime = newTime;
+                                        break;
+                                    case 3: status.startTime = newTime;
+                                        break;
+                                    case 4: status.endTime = newTime;
+                                        break;
                                 }
                                 saveEventStatus(status);
                             }
@@ -1344,13 +1480,13 @@ void displayStatusUpdateMenu(EventStatus& status, const Concert& concert) {
                 }
                 break;
 
-            case 9:
-                displayMonitoring(concert);
-                return;
+                case 9:
+                    displayMonitoring(concert);
+                    return;
 
-            default:
-                cout << "Invalid choice! Please enter 1-9.";
-                break;
+                default:
+                    cout << "Invalid choice! Please enter 1-9.";
+                    break;
             }
         } else {
             cin.clear();
@@ -1360,13 +1496,13 @@ void displayStatusUpdateMenu(EventStatus& status, const Concert& concert) {
     }
 }
 
-void displayMonitoring(const Concert& c) {
+void displayMonitoring(const Concert &c) {
     clearScreen();
 
     // Load or create event status
     EventStatus status;
     loadEventStatus(c.concertName, status);
-    
+
     string statusFile = "schedule_" + c.concertName + ".txt";
     replace(statusFile.begin(), statusFile.end(), ' ', '_');
 
@@ -1395,31 +1531,29 @@ void displayMonitoring(const Concert& c) {
             }
         }
     }
-        
+
     int choice;
     while (true) {
+        // Display details
+        cout << "========== EVENT MONITORING ==========\n";
+        cout << left << setw(8) << "Concert: " << c.concertName << endl;
+        cout << left << setw(8) << "Artist : " << c.artist << endl;
+        cout << left << setw(8) << "Venue  : " << c.venue << endl;
+        cout << left << setw(8) << "Date" << ": " << status.date << endl;
+        cout << left << setw(8) << "Gate" << ": " << status.gateTime << endl;
+        cout << left << setw(8) << "Entry" << ": " << status.entryTime << endl;
+        cout << left << setw(8) << "Start" << ": " << status.startTime << endl;
+        cout << left << setw(8) << "End" << ": " << status.endTime << endl;
+        cout << left << setw(8) << "Status : " << getStatusWithOverride(status) << endl;
 
-    // Display details
-    cout << "========== EVENT MONITORING ==========\n";
-    cout << left << setw(8) << "Concert: " << c.concertName << endl;
-    cout << left << setw(8) << "Artist : " << c.artist << endl;
-    cout << left << setw(8) << "Venue  : " << c.venue << endl;
-    cout << left << setw(8) << "Date" << ": " << status.date << endl;
-    cout << left << setw(8) << "Gate" << ": " << status.gateTime << endl;
-    cout << left << setw(8) << "Entry" << ": " << status.entryTime << endl;
-    cout << left << setw(8) << "Start" << ": " << status.startTime << endl;
-    cout << left << setw(8) << "End" << ": " << status.endTime << endl;
-    cout << left << setw(8) << "Status : " << getStatusWithOverride(status) << endl;
-
-    cout << "Issues : " << endl;
-    if (issues.empty()) {
-        cout << "   (no issues yet)\n";
-    }
-    else {
-        for (const string& s : issues) {
-            cout << "   - " << s << endl;
+        cout << "Issues : " << endl;
+        if (issues.empty()) {
+            cout << "   (no issues yet)\n";
+        } else {
+            for (const string &s: issues) {
+                cout << "   - " << s << endl;
+            }
         }
-    }
 
         cout << "=====================================================\n";
         cout << "Options:\n";
@@ -1427,26 +1561,26 @@ void displayMonitoring(const Concert& c) {
         cout << "  2. View/Add Organiser Comments\n";
         cout << "  3. Back to Admin Menu\n";
         cout << "Enter choice: ";
-        
+
         if (cin >> choice) {
             switch (choice) {
-            case 1:
-                displayStatusUpdateMenu(status, c);
-                return;
+                case 1:
+                    displayStatusUpdateMenu(status, c);
+                    return;
 
-            case 2:
-                fileComplaint("admin", c.concertName, "Organiser");
-                displayMonitoring(c);
-                return;
-                
-            case 3:
-                clearScreen();
-                return;
-                
-            default:
-                clearScreen();
-                cout << "Invalid choice! Please enter 1, 2, or 3.\n";
-                break;
+                case 2:
+                    fileComplaint("admin", c.concertName, "Organiser");
+                    displayMonitoring(c);
+                    return;
+
+                case 3:
+                    clearScreen();
+                    return;
+
+                default:
+                    clearScreen();
+                    cout << "Invalid choice! Please enter 1, 2, or 3.\n";
+                    break;
             }
         } else {
             clearScreen();
@@ -1464,10 +1598,10 @@ vector<Booking> loadUserBookings(const string &userName) {
 
     while (getline(file, line)) {
         if (line.empty()) continue;
-        
+
         stringstream ss(line);
         string user, event, date, seats, priceStr, payment;
-        
+
         getline(ss, user, ';');
         getline(ss, event, ';');
         getline(ss, date, ';');
@@ -1509,27 +1643,27 @@ string determineEventStatus(const string &eventDate) {
     int currentHour = current.tm_hour;
     int currentMin = current.tm_min;
 
-    // Compare dates 
+    // Compare dates
     if (year > currentYear) return "Upcoming";
     if (year == currentYear && month > currentMonth) return "Upcoming";
     if (year == currentYear && month == currentMonth && day > currentDay) return "Upcoming";
-    
+
 
     if (year == currentYear && month == currentMonth && day == currentDay) {
         // Load concerts to find the event time for today's events
         vector<Concert> concerts = loadConcerts("events.txt");
-        for (const Concert &c : concerts) {
+        for (const Concert &c: concerts) {
             if (c.date == eventDate) {
                 // Parse event end time to determine if event is over
                 int eventHour, eventMin;
                 char colon;
                 stringstream timeStream(c.endTime);
                 timeStream >> eventHour >> colon >> eventMin;
-                
+
                 // Convert to minutes for easier comparison
                 int currentTimeInMin = currentHour * 60 + currentMin;
                 int eventEndTimeInMin = eventHour * 60 + eventMin;
-                
+
                 // If current time is after event end time, it's past
                 if (currentTimeInMin > eventEndTimeInMin) {
                     return "Past";
@@ -1541,7 +1675,7 @@ string determineEventStatus(const string &eventDate) {
         // If event not found in concerts list, default to upcoming for same day
         return "Upcoming";
     }
-    
+
     return "Past";
 }
 
@@ -1551,11 +1685,11 @@ void sortBookingsByDate(vector<Booking> &bookings) {
         // Parse dates and compare
         int dayA, monthA, yearA, dayB, monthB, yearB;
         char dash;
-        
+
         stringstream ssA(a.eventDate), ssB(b.eventDate);
         ssA >> dayA >> dash >> monthA >> dash >> yearA;
         ssB >> dayB >> dash >> monthB >> dash >> yearB;
-        
+
         if (yearA != yearB) return yearA > yearB;
         if (monthA != monthB) return monthA > monthB;
         return dayA > dayB;
@@ -1574,62 +1708,61 @@ void searchBookings(const vector<Booking> &bookings, const string &userName) {
     cin.ignore();
     cout << "Enter search keyword (event name or venue): ";
     getline(cin, keyword);
-    
+
     // Convert keyword to lowercase for case-insensitive search
     transform(keyword.begin(), keyword.end(), keyword.begin(), ::tolower);
-    
+
     vector<Booking> searchResults;
-    for (const Booking &booking : bookings) {
+    for (const Booking &booking: bookings) {
         Concert concert = getBookingConcertDetails(booking.eventName);
-        
+
         // Convert event name and venue to lowercase for comparison
         string eventLower = booking.eventName;
         transform(eventLower.begin(), eventLower.end(), eventLower.begin(), ::tolower);
-        
+
         string venueLower = concert.venue;
         transform(venueLower.begin(), venueLower.end(), venueLower.begin(), ::tolower);
-        
+
         // Search in both event name and venue
-        if (eventLower.find(keyword) != string::npos || 
+        if (eventLower.find(keyword) != string::npos ||
             venueLower.find(keyword) != string::npos) {
-                
             searchResults.push_back(booking);
-            }
+        }
     }
 
-    
+
     if (searchResults.empty()) {
         cout << "No bookings found matching '" << keyword << "'.\n";
         Sleep(1000);
         return;
     }
-    
+
     clearScreen();
     cout << "=== SEARCH RESULTS ===\n";
     for (size_t i = 0; i < searchResults.size(); i++) {
         Concert concert = getBookingConcertDetails(searchResults[i].eventName);
-        cout << (i + 1) << ". Concert: " << searchResults[i].eventName 
-             << " (Date: " << searchResults[i].eventDate << ")\n";
+        cout << (i + 1) << ". Concert: " << searchResults[i].eventName
+                << " (Date: " << searchResults[i].eventDate << ")\n";
         cout << "   Venue: " << (concert.venue.empty() ? "N/A" : concert.venue) << "\n";
         cout << searchResults[i].eventStatus << "\n";
         cout << "--------------------------\n";
     }
-    
+
     cout << "Options:\n";
     cout << "Your can enter number for detail\n";
     cout << "Back to Booking History = \"B\"\n";
     cout << "Enter Choice: ";
-    
+
     string choice;
     cin >> choice;
-    
+
     if (toLowerSTR(choice) == "b") {
         return;
     }
-    
+
     try {
         int index = stoi(choice);
-        if (index >= 1 && index <= (int)searchResults.size()) {
+        if (index >= 1 && index <= (int) searchResults.size()) {
             displayBookingDetail(searchResults[index - 1], userName);
         } else {
             cout << "Invalid choice!\n";
@@ -1644,7 +1777,7 @@ void searchBookings(const vector<Booking> &bookings, const string &userName) {
 // Get concert details for a booking
 Concert getBookingConcertDetails(const string &eventName) {
     vector<Concert> concerts = loadConcerts("events.txt");
-    for (const Concert &c : concerts) {
+    for (const Concert &c: concerts) {
         if (c.concertName == eventName) {
             return c;
         }
@@ -1656,32 +1789,31 @@ Concert getBookingConcertDetails(const string &eventName) {
 // Display detailed booking information
 void displayBookingDetail(const Booking &booking, const string &userName) {
     clearScreen();
-    
+
     // Get concert details
     Concert concert = getBookingConcertDetails(booking.eventName);
 
     int choice;
 
     while (true) {
-    
-    cout << "=== BOOKING DETAIL ===\n";
-    cout << "Concert: " << booking.eventName << "\n";
-    cout << "Artist : " << (concert.artist.empty() ? "N/A" : concert.artist) << "\n";
-    cout << "Venue  : " << (concert.venue.empty() ? "N/A" : concert.venue) << "\n";
-    cout << "Date   : " << booking.eventDate << "\n";
-    cout << "Start  : " << (concert.startTime.empty() ? "N/A" : concert.startTime) << "\n";
-    cout << "End    : " << (concert.endTime.empty() ? "N/A" : concert.endTime) << "\n";
-    cout << "Seats  : " << booking.seats << "\n";
-    cout << "Total Paid : RM " << booking.totalPrice << "\n";
-    cout << "Payment Method: " << booking.paymentMethod << "\n";
-    cout << "Status : " << booking.eventStatus << "\n";
-    cout << "=====================================================\n";
-    
+        cout << "=== BOOKING DETAILS ===\n";
+        cout << "Concert: " << booking.eventName << "\n";
+        cout << "Artist : " << (concert.artist.empty() ? "N/A" : concert.artist) << "\n";
+        cout << "Venue  : " << (concert.venue.empty() ? "N/A" : concert.venue) << "\n";
+        cout << "Date   : " << booking.eventDate << "\n";
+        cout << "Start  : " << (concert.startTime.empty() ? "N/A" : concert.startTime) << "\n";
+        cout << "End    : " << (concert.endTime.empty() ? "N/A" : concert.endTime) << "\n";
+        cout << "Seats  : " << booking.seats << "\n";
+        cout << "Total Paid : RM " << booking.totalPrice << "\n";
+        cout << "Payment Method: " << booking.paymentMethod << "\n";
+        cout << "Status : " << booking.eventStatus << "\n";
+        cout << "=====================================================\n";
+
         cout << "Options:\n";
         cout << "  1. Feedback/Complain\n";
         cout << "  2. Back to Booking History\n";
         cout << "Enter Choice: ";
-        
+
         if (cin >> choice) {
             switch (choice) {
                 case 1:
@@ -1690,7 +1822,7 @@ void displayBookingDetail(const Booking &booking, const string &userName) {
                 case 2:
                     return;
                 default:
-                      clearScreen();
+                    clearScreen();
                     cout << "Invalid choice! Please enter 1 or 2.\n";
                     break;
             }
@@ -1707,7 +1839,7 @@ void viewBookingHistory(const string &userName) {
     while (true) {
         clearScreen();
         vector<Booking> bookings = loadUserBookings(userName);
-        
+
         if (bookings.empty()) {
             cout << "=== BOOKING HISTORY ===\n";
             cout << "No booking history found for " << userName << ".\n";
@@ -1716,27 +1848,27 @@ void viewBookingHistory(const string &userName) {
             cin.get();
             return;
         }
-        
+
         // Sort bookings by date (most recent first)
         sortBookingsByDate(bookings);
-        
+
         cout << "=== BOOKING HISTORY ===\n";
         for (size_t i = 0; i < bookings.size(); i++) {
-            cout << (i + 1) << ". Concert: " << bookings[i].eventName 
-                 << " (Date: " << bookings[i].eventDate << ")\n";
+            cout << (i + 1) << ". Concert: " << bookings[i].eventName
+                    << " (Date: " << bookings[i].eventDate << ")\n";
             cout << bookings[i].eventStatus << "\n";
             cout << "--------------------------\n";
         }
-        
+
         cout << "Options:\n";
         cout << "Your can enter number for detail\n";
         cout << "Search Bookings = \"S\"\n";
         cout << "Back to User Menu = \"B\"\n";
         cout << "Enter Choice: ";
-        
+
         string choice;
         cin >> choice;
-        
+
         if (toLowerSTR(choice) == "b") {
             clearScreen();
             return;
@@ -1745,7 +1877,7 @@ void viewBookingHistory(const string &userName) {
         } else {
             try {
                 int index = stoi(choice);
-                if (index >= 1 && index <= (int)bookings.size()) {
+                if (index >= 1 && index <= (int) bookings.size()) {
                     displayBookingDetail(bookings[index - 1], userName);
                 } else {
                     cout << "Invalid choice!\n";
@@ -1762,27 +1894,27 @@ void viewBookingHistory(const string &userName) {
 // Unified complaint/comment function for both users and admins
 void fileComplaint(const string &userName, const string &eventName, const string &userType) {
     clearScreen();
-    
+
     if (userType == "User") {
         cout << "=== FILE COMPLAINT/FEEDBACK ===\n";
     } else {
         cout << "=== ADD ORGANISER COMMENT ===\n";
     }
-    
+
     cout << "Event: " << eventName << endl;
     cout << userType << ": " << userName << endl << endl;
-    
+
     string complaint;
     cin.ignore();
-    
+
     if (userType == "User") {
         cout << "Enter your complaint/feedback (or type 'cancel' to cancel):\n";
     } else {
         cout << "Enter your comment/note (or type 'cancel' to cancel):\n";
     }
-    
+
     getline(cin, complaint);
-    
+
     if (toLowerSTR(complaint) == "cancel") {
         if (userType == "User") {
             cout << "Complaint cancelled.\n";
@@ -1792,7 +1924,7 @@ void fileComplaint(const string &userName, const string &eventName, const string
         Sleep(1000);
         return;
     }
-    
+
     if (complaint.empty()) {
         if (userType == "User") {
             cout << "Complaint cannot be empty!\n";
@@ -1802,23 +1934,23 @@ void fileComplaint(const string &userName, const string &eventName, const string
         Sleep(1000);
         return;
     }
-    
+
     // Save to issues file with appropriate prefix
     string issueFile = "issues_" + eventName + ".txt";
     replace(issueFile.begin(), issueFile.end(), ' ', '_');
-    
+
     ofstream file(issueFile, ios::app);
     if (file.is_open()) {
         string timestamp = getCurrentDateTime();
-        
+
         if (userType == "User") {
             file << "[User: " << userName << "] [" << timestamp << "] " << complaint << "\n";
         } else {
             file << "[Organiser: " << userName << "] [" << timestamp << "] " << complaint << "\n";
         }
-        
+
         file.close();
-        
+
         if (userType == "User") {
             cout << "\nComplaint/Feedback submitted successfully!\n";
             cout << "Your feedback has been recorded and will be reviewed by the event organizers.\n";
@@ -1826,7 +1958,7 @@ void fileComplaint(const string &userName, const string &eventName, const string
             cout << "\nComment added successfully!\n";
             cout << "Your organiser comment has been recorded.\n";
         }
-        
+
         cout << "Press Enter to continue...";
         cin.get();
     } else {
@@ -1834,4 +1966,3 @@ void fileComplaint(const string &userName, const string &eventName, const string
         Sleep(3000);
     }
 }
-
