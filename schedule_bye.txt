@@ -1,0 +1,7 @@
+EventName=bye
+ManualStatus=Cancelled
+GateTime=17:22
+EntryTime=17:52
+StartTime=18:22
+EndTime=18:23
+Date=01-09-2025
