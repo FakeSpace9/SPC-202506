@@ -1,0 +1,7 @@
+EventName=haha
+ManualStatus=Ongoing (Manual)
+GateTime=11:00
+EntryTime=11:30
+StartTime=18:59
+EndTime=17:00
+Date=01-09-2025
