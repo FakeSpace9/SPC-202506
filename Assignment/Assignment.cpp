@@ -7,14 +7,14 @@
 #include <fstream>
 #include <sstream>
 #include <regex>
-#include <cctype>
 #include <thread>
-#include <chrono>
 #include <limits>
 #include <ctype.h>
 #include <conio.h>
 #include <ctime>
 #include <iomanip>
+#include <map>
+#include <iterator>
 
 using namespace std;
 
@@ -2038,7 +2038,7 @@ void eventReport() {
             continue;
         }
 
-        const Concert &selectedConcert = pastEvents[choice - 1].first;
+        const Concert &selectedConcert = pastEvents[choice - 1].first;// to take the concert name
         clearScreen();
         cout << "=== EVENT REPORT: " << selectedConcert.concertName << " ===\n\n";
 
