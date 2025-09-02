@@ -608,8 +608,11 @@ bool timeValid(const string &timeStr) {
 void createEventSeats() {
     clearScreen();
     string eventName, artistName, eventVenue, eventDate, startTime, endTime;
-    int rows, columns, vipRows, regularRows;
+    int rows, cols, vipRows, regularRows;
     cin.ignore();
+    const int MAX_ROWS = 26;
+    const int MAX_COLS = 20;
+    string seatCodes[MAX_ROWS][MAX_COLS];
     do {
         cout << "Enter concert Name (back to cancel this process): ";
         getline(cin, eventName);
@@ -654,27 +657,30 @@ void createEventSeats() {
     } while (!timeValid(endTime));
 
 
-    cout << "Enter number of rows (max 26): ";
-    cin >> rows;
-    while (rows < 10) {
-        cout << "At least 10 rows are required. Please enter again: ";
+    while (true) {
+        std::cout << "Enter number of rows (max 26): ";
         cin >> rows;
-    }
-    while (rows > 26) {
-        cout << "Maximum 26 rows. Please enter again: ";
-        cin >> rows;
+        if (rows >= 1 && rows <= MAX_ROWS) {
+            break;
+        }
+        cout << "Invalid input. Rows must be between 1 and " << MAX_ROWS << ". Please try again.\n";
+        cin.clear();
+        cin.ignore();
     }
 
-    cout << "Enter number of seats/row: ";
-    cin >> columns;
-    while (columns < 10) {
-        cout << "At least 10 seats per row. Please enter again: ";
-        cin >> columns;
+
+
+    while (true) {
+        cout << "Enter number of seats per row (1-" << MAX_COLS << "): ";
+        if (cin >> cols && cols >= 1 && cols <= MAX_COLS) {
+            break;
+        }
+        cout << "Invalid input. Columns must be between 1 and " << MAX_COLS << ". Please try again.\n";
+        cin.clear();
+        cin.ignore();
     }
-    while (columns > 25) {
-        cout << "Cannot exceed 25 seats per row. Please enter again: ";
-        cin >> columns;
-    }
+
+
 
     // categorize rows
     while (true) {
@@ -690,24 +696,25 @@ void createEventSeats() {
         }
     }
 
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            seatCodes[i][j] = string(1, (char)('A' + i)) + to_string(j + 1);
+        }
+    }
+
     string seatFileName = "seats_" + eventName + ".txt";
     // make filename nice one
     replace(seatFileName.begin(), seatFileName.end(), ' ', '_');
 
-    // seats de layout
     clearScreen();
-    cout << "Preview:\n\n";
-
+    cout << "Preview (from 2D array):\n\n";
     for (int i = 0; i < rows; i++) {
-        if (i == 0)
-            cout << "VIP:\n";
-        else if (i == vipRows)
-            cout << "\nRegular:\n";
-        else if (i == vipRows + regularRows)
-            cout << "\nNormal:\n";
+        if (i == 0) cout << "VIP:\n";
+        else if (i == vipRows) cout << "\nRegular:\n";
+        else if (i == vipRows + regularRows) cout << "\nNormal:\n";
 
-        for (int j = 1; j <= columns; j++) {
-            cout << "[" << (char) ('A' + i) << j << "] ";
+        for (int j = 0; j < cols; j++) {
+            cout << "[" << seatCodes[i][j] << "] ";
         }
         cout << endl;
     }
@@ -732,7 +739,7 @@ void createEventSeats() {
         else
             section = "Normal";
 
-        for (int j = 1; j <= columns; j++) {
+        for (int j = 1; j <= cols; j++) {
             Seat seat;
             seat.row = 'A' + i;
             seat.number = j;
