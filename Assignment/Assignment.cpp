@@ -76,14 +76,17 @@ void searchBookings(const vector<Booking> &bookings, const string &userName);
 void sortBookingsByDate(vector<Booking> &bookings);
 vector<Booking> loadUserBookings(const string &userName);
 string determineEventStatus(const string &eventDate);
+bool canSetStatus(const string& currentStatus, const string& newStatus);
 void displayBookingDetail(const Booking &booking, const string &userName);
 Concert getBookingConcertDetails(const string &eventName);
 void saveEventStatus(const EventStatus &status);
 void loadEventStatus(const string &eventName, EventStatus &status);
 void updateEventTimes(EventStatus &status, const Concert &concert);
+void cascadeTimeUpdate(EventStatus& status, int timeType, const string& newTime);
 void displayStatusUpdateMenu(EventStatus &status, const Concert &concert);
 void displayMonitoring(const Concert &c);
 string getCurrentDateTime();
+int timeToMinutes(const string& timeStr);
 void eventMonitoring();
 void fileComplaint(const string &userName, const string &eventName, const string &userType);
 void mainMenu();
@@ -1286,6 +1289,7 @@ void loadEventStatus(const string &eventName, EventStatus &status) {
 
 // Update event times (if no manual override, use auto calculation)
 void updateEventTimes(EventStatus &status, const Concert &concert) {
+
     auto calcTime = [](string t, int minusHour, int minusMin) {
         int h, m;
         char colon;
@@ -1312,13 +1316,21 @@ void updateEventTimes(EventStatus &status, const Concert &concert) {
     saveEventStatus(status);
 }
 
-// Get current status (consider manual settings)
-string getStatusWithOverride(const EventStatus &status) {
-    if (!status.manualStatus.empty()) {
-        return status.manualStatus;
+int timeToMinutes(const string& timeStr) {
+    int h, m;
+    char colon;
+    stringstream ss(timeStr);
+    ss >> h >> colon >> m;
+    return h * 60 + m;
+}
+// Get current status 
+string getCurrentEventStatus(const EventStatus &status) {
+
+    if (status.manualStatus == "Cancelled") {
+        return "Cancelled";
     }
 
-    // Use auto status logic
+    // use current time to determine status
     time_t now = time(0);
     tm local;
     localtime_s(&local, &now);
@@ -1327,28 +1339,48 @@ string getStatusWithOverride(const EventStatus &status) {
     sprintf_s(buffer, "%02d:%02d", local.tm_hour, local.tm_min);
     string currentTime(buffer);
 
-    auto toMinutes = [](const string &t) {
-        int h, m;
-        char colon;
-        stringstream ss(t);
-        ss >> h >> colon >> m;
-        return h * 60 + m;
-    };
+    int cur = timeToMinutes(currentTime);
+    int gate = timeToMinutes(status.gateTime);
+    int entry = timeToMinutes(status.entryTime);
+    int start = timeToMinutes(status.startTime);
+    int end = timeToMinutes(status.endTime);
 
-    int cur = toMinutes(currentTime);
-    int gate = toMinutes(status.gateTime);
-    int entry = toMinutes(status.entryTime);
-    int start = toMinutes(status.startTime);
-    int end = toMinutes(status.endTime);
+    string timeBasedStatus;
+    if (cur < gate) timeBasedStatus = "Upcoming";
+    else if (cur < entry) timeBasedStatus = "Gate Open";
+    else if (cur < start) timeBasedStatus = "Entry In Progress";
+    else if (cur < end) timeBasedStatus = "Ongoing";
+    else timeBasedStatus = "Completed";
 
-    if (cur < gate) return "Upcoming (Auto)";
-    else if (cur < entry) return "Gate Open (Auto)";
-    else if (cur < start) return "Entry In Progress (Auto)";
-    else if (cur < end) return "Ongoing (Auto)";
-    else return "Completed (Auto)";
+    // If there is a manual state, check whether automatic conversion is required
+    if (!status.manualStatus.empty()) {
+        // Define the status priority (larger numbers indicate later status)
+        auto getStatusPriority = [](const string& s) {
+            if (s == "Upcoming") return 1;
+            if (s == "Gate Open") return 2;
+            if (s == "Entry In Progress") return 3;
+            if (s == "Ongoing") return 4;
+            if (s == "Completed") return 5;
+            return 0;
+        };
+
+        int manualPriority = getStatusPriority(status.manualStatus);
+        int timePriority = getStatusPriority(timeBasedStatus);
+
+        // If the time status is further than the manual status, automatically switch
+        if (timePriority > manualPriority) {
+            return timeBasedStatus;
+        } else {
+            return status.manualStatus;
+        }
+    }
+
+
+    return timeBasedStatus;
 }
 
 string getCurrentDateTime() {
+
     time_t now = time(0);
     tm local;
     localtime_s(&local, &now);
@@ -1360,145 +1392,326 @@ string getCurrentDateTime() {
     return string(buffer);
 }
 
+// Function to check if status change is allowed
+bool canSetStatus(const string& currentStatus, const string& newStatus) {
+    // Define status hierarchy: Upcoming < Gate Open < Entry In Progress < Ongoing < Completed
+    auto getStatusLevel = [](const string& s) {
+        if (s == "Cancelled") return 0; // Special case - can always set to cancelled
+        if (s == "Upcoming") return 1;
+        if (s == "Gate Open") return 2;
+        if (s == "Entry In Progress") return 3;
+        if (s == "Ongoing") return 4;
+        if (s == "Completed") return 5;
+        return 0;
+    };
+    
+    // Always allow setting to Cancelled
+    if (newStatus == "Cancelled") return true;
+    
+    int currentLevel = getStatusLevel(currentStatus);
+    int newLevel = getStatusLevel(newStatus);
+    
+    // Don't allow going backwards in status (except to Cancelled)
+    return newLevel >= currentLevel;
+}
+
+string minutesToTime(int minutes) {
+    int h = minutes / 60;
+    int m = minutes % 60;
+    if (h >= 24) h %= 24; 
+    char buf[6];
+    sprintf_s(buf, "%02d:%02d", h, m);
+    return string(buf);
+}
+
+// Handle cascading time updates
+void cascadeTimeUpdate(EventStatus& status, int timeType, const string& newTime) {
+    // timeType: 1=Gate, 2=Entry, 3=Start, 4=End
+    
+    int gateMin = timeToMinutes(status.gateTime);
+    int entryMin = timeToMinutes(status.entryTime);
+    int startMin = timeToMinutes(status.startTime);
+    int endMin = timeToMinutes(status.endTime);
+    int newMin = timeToMinutes(newTime);
+    
+    switch (timeType) {
+        case 1: 
+            status.gateTime = newTime;
+            gateMin = newMin;
+            
+            // Check if gate time conflicts with entry time
+            if (gateMin >= entryMin) {
+                cout << "Warning: Gate time (" << newTime << ") is later than or equal to current entry time (" << status.entryTime << ")\n";
+                cout << "Please enter new entry time (HH:MM): ";
+                string newEntryTime;
+                getline(cin, newEntryTime);
+                
+                if (timeValid(newEntryTime)) {
+                    status.entryTime = newEntryTime;
+                    entryMin = timeToMinutes(newEntryTime);
+                    cout << "Entry time updated to " << status.entryTime << "\n";
+                } else {
+                    cout << "Invalid time format! Entry time not updated.\n";
+                    return;
+                }
+            }
+            
+            // Check if entry time now conflicts with start time
+            if (entryMin >= startMin) {
+                cout << "Warning: Entry time (" << status.entryTime << ") is later than or equal to current start time (" << status.startTime << ")\n";
+                cout << "Please enter new start time (HH:MM): ";
+                string newStartTime;
+                getline(cin, newStartTime);
+                
+                if (timeValid(newStartTime)) {
+                    status.startTime = newStartTime;
+                    startMin = timeToMinutes(newStartTime);
+                    cout << "Start time updated to " << status.startTime << "\n";
+                } else {
+                    cout << "Invalid time format! Start time not updated.\n";
+                    return;
+                }
+            }
+            
+            // Check if start time now conflicts with end time
+            if (startMin >= endMin) {
+                cout << "Warning: Start time (" << status.startTime << ") is later than or equal to current end time (" << status.endTime << ")\n";
+                cout << "Please enter new end time (HH:MM): ";
+                string newEndTime;
+                getline(cin, newEndTime);
+                
+                if (timeValid(newEndTime)) {
+                    status.endTime = newEndTime;
+                    cout << "End time updated to " << status.endTime << "\n";
+                } else {
+                    cout << "Invalid time format! End time not updated.\n";
+                    return;
+                }
+            }
+            break;
+            
+        case 2: 
+            // Check if entry time is earlier than gate time
+            if (newMin <= gateMin) {
+                cout << "Entry time cannot be earlier than or equal to gate time (" << status.gateTime << ")\n";
+                return;
+            }
+            
+            status.entryTime = newTime;
+            entryMin = newMin;
+            
+            // Check if entry time conflicts with start time
+            if (entryMin >= startMin) {
+                cout << "Warning: Entry time (" << newTime << ") is later than or equal to current start time (" << status.startTime << ")\n";
+                cout << "Please enter new start time (HH:MM): ";
+                string newStartTime;
+                getline(cin, newStartTime);
+                
+                if (timeValid(newStartTime)) {
+                    status.startTime = newStartTime;
+                    startMin = timeToMinutes(newStartTime);
+                    cout << "Start time updated to " << status.startTime << "\n";
+                } else {
+                    cout << "Invalid time format! Start time not updated.\n";
+                    return;
+                }
+            }
+            
+            // Check if start time now conflicts with end time
+            if (startMin >= endMin) {
+                cout << "Warning: Start time (" << status.startTime << ") is later than or equal to current end time (" << status.endTime << ")\n";
+                cout << "Please enter new end time (HH:MM): ";
+                string newEndTime;
+                getline(cin, newEndTime);
+                
+                if (timeValid(newEndTime)) {
+                    status.endTime = newEndTime;
+                    cout << "End time updated to " << status.endTime << "\n";
+                } else {
+                    cout << "Invalid time format! End time not updated.\n";
+                    return;
+                }
+            }
+            break;
+            
+        case 3: 
+            // Check if start time is earlier than entry time
+            if (newMin <= entryMin) {
+                cout << "Start time cannot be earlier than or equal to entry time (" << status.entryTime << ")\n";
+                return;
+            }
+            
+            status.startTime = newTime;
+            startMin = newMin;
+            
+            // Check if start time conflicts with end time
+            if (startMin >= endMin) {
+                cout << "Warning: Start time (" << newTime << ") is later than or equal to current end time (" << status.endTime << ")\n";
+                cout << "Please enter new end time (HH:MM): ";
+                string newEndTime;
+                getline(cin, newEndTime);
+                
+                if (timeValid(newEndTime)) {
+                    status.endTime = newEndTime;
+                    cout << "End time updated to " << status.endTime << "\n";
+                } else {
+                    cout << "Invalid time format! End time not updated.\n";
+                    return;
+                }
+            }
+            break;
+            
+        case 4: 
+            // Check if end time is earlier than start time
+            if (newMin <= startMin) {
+                cout << "End time cannot be earlier than or equal to start time (" << status.startTime << ")\n";
+                return;
+            }
+            
+            status.endTime = newTime;
+            break;
+    }
+}
+
 void displayStatusUpdateMenu(EventStatus &status, const Concert &concert) {
     int choice;
-
     while (true) {
         clearScreen();
         cout << "========== UPDATE EVENT STATUS ==========\n";
         cout << "Event: " << concert.concertName << "\n";
-        cout << "Current Status: " << getStatusWithOverride(status) << "\n\n";
-
+        cout << "Current Status: " << getCurrentEventStatus(status) << "\n\n";
         cout << "Set status to:\n";
         cout << " 1) Cancelled\n";
-        cout << " 2) Postponed\n";
-        cout << " 3) Upcoming (manual)\n";
-        cout << " 4) Gate Open (manual)\n";
-        cout << " 5) Entry In Progress (manual)\n";
-        cout << " 6) Ongoing (manual)\n";
-        cout << " 7) Clear manual override (use Auto)\n";
-        cout << " 8) Update Times\n";
-        cout << " 9) Back\n";
+        cout << " 2) Upcoming\n";
+        cout << " 3) Gate Open\n";
+        cout << " 4) Entry In Progress\n";
+        cout << " 5) Ongoing\n";
+        cout << " 6) Completed\n";
+        cout << " 7) Update/Postpone Times\n";  
+        cout << " 0) Back\n";
         cout << "Enter choice: ";
-
+        
         if (cin >> choice) {
+            time_t now = time(0);
+            tm local;
+            localtime_s(&local, &now);
+            char timeBuffer[6];
+            sprintf_s(timeBuffer, "%02d:%02d", local.tm_hour, local.tm_min);
+            char dateBuffer[11];
+            sprintf_s(dateBuffer, "%02d-%02d-%04d", local.tm_mday, local.tm_mon + 1, local.tm_year + 1900);
+            
             switch (choice) {
                 case 1:
                     status.manualStatus = "Cancelled";
                     saveEventStatus(status);
+                    cout << "Status set to Cancelled\n";
+                    Sleep(1000);
                     break;
-
                 case 2:
-                    status.manualStatus = "Postponed";
-                    saveEventStatus(status);
+                    {
+                        string currentStatus = getCurrentEventStatus(status);
+                        if (!canSetStatus(currentStatus, "Upcoming")) {
+                            cout << "Cannot set to Upcoming: Event is already in " << currentStatus << " status\n";
+                            Sleep(2000);
+                            break;
+                        }
+                        status.manualStatus = "Upcoming";
+                        saveEventStatus(status);
+                        cout << "Status set to Upcoming\n";
+                        Sleep(1000);
+                    }
                     break;
-
                 case 3:
-                    status.manualStatus = "Upcoming (Manual)";
-                    saveEventStatus(status);
-                    break;
-
-                case 4:
-                    status.manualStatus = "Gate Open (Manual)";
                     {
-                        time_t now = time(0);
-                        tm local;
-                        localtime_s(&local, &now);
-
-                        char timeBuffer[6];
-                        sprintf_s(timeBuffer, "%02d:%02d", local.tm_hour, local.tm_min);
+                        string currentStatus = getCurrentEventStatus(status);
+                        if (!canSetStatus(currentStatus, "Gate Open")) {
+                            cout << "Cannot set to Gate Open: Event is already in " << currentStatus << " status\n";
+                            Sleep(2000);
+                            break;
+                        }
+                        status.manualStatus = "Gate Open";
                         status.gateTime = string(timeBuffer);
-
-                        char dateBuffer[11];
-                        sprintf_s(dateBuffer, "%02d-%02d-%04d",
-                                  local.tm_mday, local.tm_mon + 1, local.tm_year + 1900);
                         status.date = string(dateBuffer);
+                        saveEventStatus(status);
+                        cout << "Status set to Gate Open\n";
+                        Sleep(1000);
                     }
-                    saveEventStatus(status);
                     break;
-
-                case 5:
-                    status.manualStatus = "Entry In Progress (Manual)";
+                case 4:
                     {
-                        time_t now = time(0);
-                        tm local;
-                        localtime_s(&local, &now);
-
-                        char timeBuffer[6];
-                        sprintf_s(timeBuffer, "%02d:%02d", local.tm_hour, local.tm_min);
+                        string currentStatus = getCurrentEventStatus(status);
+                        if (!canSetStatus(currentStatus, "Entry In Progress")) {
+                            cout << "Cannot set to Entry In Progress: Event is already in " << currentStatus << " status\n";
+                            Sleep(2000);
+                            break;
+                        }
+                        status.manualStatus = "Entry In Progress";
                         status.entryTime = string(timeBuffer);
-
-                        char dateBuffer[11];
-                        sprintf_s(dateBuffer, "%02d-%02d-%04d",
-                                  local.tm_mday, local.tm_mon + 1, local.tm_year + 1900);
                         status.date = string(dateBuffer);
+                        saveEventStatus(status);
+                        cout << "Status set to Entry In Progress\n";
+                        Sleep(1000);
                     }
-                    saveEventStatus(status);
                     break;
-
-                case 6:
-                    status.manualStatus = "Ongoing (Manual)";
+                case 5:
                     {
-                        time_t now = time(0);
-                        tm local;
-                        localtime_s(&local, &now);
-
-                        char timeBuffer[6];
-                        sprintf_s(timeBuffer, "%02d:%02d", local.tm_hour, local.tm_min);
+                        string currentStatus = getCurrentEventStatus(status);
+                        if (!canSetStatus(currentStatus, "Ongoing")) {
+                            cout << "Cannot set to Ongoing: Event is already in " << currentStatus << " status\n";
+                            Sleep(2000);
+                            break;
+                        }
+                        status.manualStatus = "Ongoing";
                         status.startTime = string(timeBuffer);
-
-                        char dateBuffer[11];
-                        sprintf_s(dateBuffer, "%02d-%02d-%04d",
-                                  local.tm_mday, local.tm_mon + 1, local.tm_year + 1900);
                         status.date = string(dateBuffer);
+                        saveEventStatus(status);
+                        cout << "Status set to Ongoing\n";
+                        Sleep(1000);
                     }
+                    break;
+                case 6: 
+                    status.manualStatus = "Completed";
+                    status.endTime = string(timeBuffer);
+                    status.date = string(dateBuffer);
                     saveEventStatus(status);
+                    cout << "Status set to Completed\n";
+                    Sleep(1000);
                     break;
-
-                case 7:
-                    status.manualStatus = "";
-                    updateEventTimes(status, concert);
-                    break;
-
-                case 8: {
+                case 7: {
                     cout << "\nCurrent Times:\n";
-                    cout << "Gate Time : " << status.gateTime << "\n";
-                    cout << "Entry Time: " << status.entryTime << "\n";
-                    cout << "Start Time: " << status.startTime << "\n";
-                    cout << "End Time  : " << status.endTime << "\n\n";
-
-                    cout << "Which time to update?\n";
+                    cout << left << setw(12) << "Gate Time" << ": " << status.gateTime << "\n";
+                    cout << left << setw(12) << "Entry Time" << ": " << status.entryTime << "\n";
+                    cout << left << setw(12) << "Start Time" << ": " << status.startTime << "\n";
+                    cout << left << setw(12) << "End Time" << ": " << status.endTime << "\n\n";
+                    
+                    cout << "Which time to update/postpone?\n";
                     cout << "1) Gate Time\n";
                     cout << "2) Entry Time\n";
                     cout << "3) Start Time\n";
                     cout << "4) End Time\n";
-                    cout << "5) Cancel\n";
+                    cout << "0) Cancel\n";
                     cout << "Enter choice: ";
-
+                    
                     int timeChoice;
                     if (cin >> timeChoice) {
                         cin.ignore();
-
                         if (timeChoice >= 1 && timeChoice <= 4) {
                             string newTime;
                             cout << "Enter new time (HH:MM): ";
                             getline(cin, newTime);
-
                             if (timeValid(newTime)) {
-                                switch (timeChoice) {
-                                    case 1: status.gateTime = newTime;
-                                        break;
-                                    case 2: status.entryTime = newTime;
-                                        break;
-                                    case 3: status.startTime = newTime;
-                                        break;
-                                    case 4: status.endTime = newTime;
-                                        break;
-                                }
+                                cout << "\nProcessing time update...\n";
+                                cascadeTimeUpdate(status, timeChoice, newTime);
                                 saveEventStatus(status);
+                                cout << "\nTime updated successfully!\n";
+                                cout << "Press Enter to continue...";
+                                cin.get();
+                            } else {
+                                cout << "Invalid time format!\n";
+                                Sleep(1000);
                             }
-                        } else if (timeChoice != 5) {
-                            cout << "Invalid choice! Please enter 1-5.\n";
+                        } else if (timeChoice != 0) {
+                            cout << "Invalid choice! Please enter 1-4 or 0.\n";
                             Sleep(1000);
                         }
                     } else {
@@ -1509,19 +1722,19 @@ void displayStatusUpdateMenu(EventStatus &status, const Concert &concert) {
                     }
                 }
                 break;
-
-                case 9:
+                case 0:
                     displayMonitoring(concert);
                     return;
-
                 default:
-                    cout << "Invalid choice! Please enter 1-9.";
+                    cout << "Invalid choice! Please enter 1-7 or 0.\n";
+                    Sleep(1000);
                     break;
             }
         } else {
             cin.clear();
             cin.ignore(10000, '\n');
-            cout << "Invalid input! Please enter a number.";
+            cout << "Invalid input! Please enter a number.\n";
+            Sleep(1000);
         }
     }
 }
@@ -1564,19 +1777,19 @@ void displayMonitoring(const Concert &c) {
 
     int choice;
     while (true) {
-        // Display details
+        // Display details with proper alignment using setw
         cout << "========== EVENT MONITORING ==========\n";
-        cout << left << setw(8) << "Concert : " << c.concertName << endl;
-        cout << left << setw(8) << "Artist  : " << c.artist << endl;
-        cout << left << setw(8) << "Venue   : " << c.venue << endl;
-        cout << left << setw(8) << "Date    : " << status.date << endl;
-        cout << left << setw(8) << "Gate    : " << status.gateTime << endl;
-        cout << left << setw(8) << "Entry   : " << status.entryTime << endl;
-        cout << left << setw(8) << "Start   : " << status.startTime << endl;
-        cout << left << setw(8) << "End     : " << status.endTime << endl;
-        cout << left << setw(8) << "Status  : " << getStatusWithOverride(status) << endl;
+        cout << left << setw(10) << "Concert" << ": " << c.concertName << endl;
+        cout << left << setw(10) << "Artist" << ": " << c.artist << endl;
+        cout << left << setw(10) << "Venue" << ": " << c.venue << endl;
+        cout << left << setw(10) << "Date" << ": " << status.date << endl;
+        cout << left << setw(10) << "Gate" << ": " << status.gateTime << endl;
+        cout << left << setw(10) << "Entry" << ": " << status.entryTime << endl;
+        cout << left << setw(10) << "Start" << ": " << status.startTime << endl;
+        cout << left << setw(10) << "End" << ": " << status.endTime << endl;
+        cout << left << setw(10) << "Status" << ": " << getCurrentEventStatus(status) << endl;
 
-        cout << "Issues : " << endl;
+        cout << left << setw(10) << "Issues" << ": " << endl;
         if (issues.empty()) {
             cout << "   (no issues yet)\n";
         } else {
@@ -1588,7 +1801,7 @@ void displayMonitoring(const Concert &c) {
         cout << "=====================================================\n";
         cout << "Options:\n";
         cout << "  1. Update Event Status\n";
-        cout << "  2. View/Add Organiser Comments\n";
+        cout << "  2. Add Organiser Comments\n";
         cout << "  0. Back to Admin Menu\n";
         cout << "Enter choice: ";
 
@@ -1609,7 +1822,7 @@ void displayMonitoring(const Concert &c) {
 
                 default:
                     clearScreen();
-                    cout << "Invalid choice! Please enter 1, 2, or 3.\n";
+                    cout << "Invalid choice! Please enter 1, 2, or 0.\n";
                     break;
             }
         } else {
@@ -1648,7 +1861,12 @@ vector<Booking> loadUserBookings(const string &userName) {
             booking.totalPrice = stod(priceStr);
             booking.paymentMethod = payment;
             booking.bookingDateTime = getCurrentDateTime();
-            booking.eventStatus = determineEventStatus(date);
+            
+            // Get current status from event monitoring system
+            EventStatus status;
+            loadEventStatus(event, status);
+            booking.eventStatus = getCurrentEventStatus(status);
+            
             userBookings.push_back(booking);
         }
     }
@@ -1657,7 +1875,7 @@ vector<Booking> loadUserBookings(const string &userName) {
 }
 
 // Determine if event is upcoming or past
-string determineEventStatus(const string &eventDate) {
+string determineEventStatus(const string &eventDate, const string &eventName = "") {
     // dd-mm-yyyy format
     int day, month, year;
     char dash1, dash2;
@@ -1678,37 +1896,71 @@ string determineEventStatus(const string &eventDate) {
     if (year == currentYear && month > currentMonth) return "Upcoming";
     if (year == currentYear && month == currentMonth && day > currentDay) return "Upcoming";
 
-
     if (year == currentYear && month == currentMonth && day == currentDay) {
-        // Load concerts to find the event time for today's events
-        vector<Concert> concerts = loadConcerts("events.txt");
-        for (const Concert &c: concerts) {
-            if (c.date == eventDate) {
-                // Parse event end time to determine if event is over
-                int eventHour, eventMin;
-                char colon;
-                stringstream timeStream(c.endTime);
-                timeStream >> eventHour >> colon >> eventMin;
-
-                // Convert to minutes for easier comparison
-                int currentTimeInMin = currentHour * 60 + currentMin;
-                int eventEndTimeInMin = eventHour * 60 + eventMin;
-
-                // If current time is after event end time, it's past
-                if (currentTimeInMin > eventEndTimeInMin) {
-                    return "Past";
+        string startTime, endTime;
+        
+        // First try to get updated time info from EventStatus if eventName is provided
+        if (!eventName.empty()) {
+            EventStatus status;
+            loadEventStatus(eventName, status);
+            if (!status.startTime.empty() && !status.endTime.empty()) {
+                startTime = status.startTime;
+                endTime = status.endTime;
+            }
+        }
+        
+        // If no updated times found, load from concerts file
+        if (startTime.empty() || endTime.empty()) {
+            vector<Concert> concerts = loadConcerts("events.txt");
+            for (const Concert &c: concerts) {
+                // Match by event name if provided, otherwise by date
+                bool matchFound = false;
+                if (!eventName.empty()) {
+                    matchFound = (c.concertName == eventName);
                 } else {
-                    return "Upcoming";
+                    matchFound = (c.date == eventDate);
+                }
+                
+                if (matchFound) {
+                    startTime = c.startTime;
+                    endTime = c.endTime;
+                    break;
                 }
             }
         }
-        // If event not found in concerts list, default to upcoming for same day
+        
+        if (!startTime.empty() && !endTime.empty()) {
+            // Parse event start and end time
+            int startHour, startMin, endHour, endMin;
+            char colon;
+            
+            stringstream startTimeStream(startTime);
+            stringstream endTimeStream(endTime);
+            
+            startTimeStream >> startHour >> colon >> startMin;
+            endTimeStream >> endHour >> colon >> endMin;
+
+            // Convert to minutes for easier comparison
+            int currentTimeInMin = currentHour * 60 + currentMin;
+            int eventStartTimeInMin = startHour * 60 + startMin;
+            int eventEndTimeInMin = endHour * 60 + endMin;
+
+            // Determine status based on current time
+            if (currentTimeInMin < eventStartTimeInMin) {
+                return "Upcoming";  
+            } else if (currentTimeInMin >= eventStartTimeInMin && currentTimeInMin <= eventEndTimeInMin) {
+                return "Ongoing";   
+            } else {
+                return "Past";     
+            }
+        }
+        
+        // If event time not found, default to upcoming for same day
         return "Upcoming";
     }
 
-    return "Past";
+    return "Past";  // Event date is in the past
 }
-
 // Sort bookings by event date in descending order
 void sortBookingsByDate(vector<Booking> &bookings) {
     sort(bookings.begin(), bookings.end(), [](const Booking &a, const Booking &b) {
@@ -1760,47 +2012,69 @@ void searchBookings(const vector<Booking> &bookings, const string &userName) {
         }
     }
 
-
     if (searchResults.empty()) {
         cout << "No bookings found matching '" << keyword << "'.\n";
         Sleep(1000);
         return;
     }
 
-    clearScreen();
-    cout << "=== SEARCH RESULTS ===\n";
-    for (size_t i = 0; i < searchResults.size(); i++) {
-        Concert concert = getBookingConcertDetails(searchResults[i].eventName);
-        cout << (i + 1) << ". Concert: " << searchResults[i].eventName
-                << " (Date: " << searchResults[i].eventDate << ")\n";
-        cout << "   Venue: " << (concert.venue.empty() ? "N/A" : concert.venue) << "\n";
-        cout << searchResults[i].eventStatus << "\n";
-        cout << "--------------------------\n";
-    }
-
-    cout << "Options:\n";
-    cout << "Your can enter number for detail\n";
-    cout << "Back to Booking History = \"B\"\n";
-    cout << "Enter Choice: ";
-
-    string choice;
-    cin >> choice;
-
-    if (toLowerSTR(choice) == "b") {
-        return;
-    }
-
-    try {
-        int index = stoi(choice);
-        if (index >= 1 && index <= (int) searchResults.size()) {
-            displayBookingDetail(searchResults[index - 1], userName);
-        } else {
-            cout << "Invalid choice!\n";
-            Sleep(1000);
+    while (true) {  // Keep user on search results page
+        clearScreen();
+        cout << "=== SEARCH RESULTS ===\n";
+        for (size_t i = 0; i < searchResults.size(); i++) {
+            Concert concert = getBookingConcertDetails(searchResults[i].eventName);
+            
+            // Get the latest event status and date information
+            EventStatus status;
+            loadEventStatus(searchResults[i].eventName, status);
+            
+            // Use updated date if available, otherwise use original booking date
+            string displayDate = status.date.empty() ? searchResults[i].eventDate : status.date;
+            
+            // Count seats
+            int seatCount = 0;
+            stringstream ss(searchResults[i].seats);
+            string seat;
+            while (getline(ss, seat, ',')) {
+                seatCount++;
+            }
+            
+            cout <<(i + 1) << left << setw(11)  << " Concert"<<" : "<< searchResults[i].eventName << " ";
+            cout << "(" << displayDate << ")\n"; 
+            cout << "  " <<left << setw(11) << "Venue" << ": " << (concert.venue.empty() ? "N/A" : concert.venue) << "\n";
+            cout << "  " <<left << setw(11) << "Seats" << ": " << seatCount << " seat(s)\n";
+            cout << "  " <<left << setw(11) << "Total" << ": RM " << fixed << setprecision(2) << searchResults[i].totalPrice << "\n";
+            cout << "  " << left << setw(11) << "Status" << ": " << determineEventStatus(displayDate, searchResults[i].eventName) << "\n";
+            cout << "-----------------------------------------\n";
         }
-    } catch (...) {
-        cout << "Invalid input!\n";
-        Sleep(1000);
+
+        cout << "Options:\n";
+        cout << "Enter number for details\n";
+        cout << "Back to Booking History = \"0\"\n";
+        cout << "Enter Choice: ";
+
+        string choice;
+        cin >> choice;
+
+        if (choice == "0") {
+            return;  
+        }
+
+        try {
+            int index = stoi(choice);
+            if (index >= 1 && index <= (int) searchResults.size()) {
+                displayBookingDetail(searchResults[index - 1], userName);
+                continue;
+            } else {
+                cout << "Invalid choice! Please enter a valid number or 0.\n";
+                Sleep(1000);
+                continue;  
+            }
+        } catch (...) {
+            cout << "Invalid input! Please enter a valid number or 0.\n";
+            Sleep(1000);
+            continue;  
+        }
     }
 }
 
@@ -1814,55 +2088,6 @@ Concert getBookingConcertDetails(const string &eventName) {
     }
     // Return empty concert if not found
     return {"", "", "", "", "", ""};
-}
-
-// Display detailed booking information
-void displayBookingDetail(const Booking &booking, const string &userName) {
-    clearScreen();
-
-    // Get concert details
-    Concert concert = getBookingConcertDetails(booking.eventName);
-
-    int choice;
-
-    while (true) {
-        cout << "=== BOOKING DETAILS ===\n";
-        cout << "Concert: " << booking.eventName << "\n";
-        cout << "Artist : " << (concert.artist.empty() ? "N/A" : concert.artist) << "\n";
-        cout << "Venue  : " << (concert.venue.empty() ? "N/A" : concert.venue) << "\n";
-        cout << "Date   : " << booking.eventDate << "\n";
-        cout << "Start  : " << (concert.startTime.empty() ? "N/A" : concert.startTime) << "\n";
-        cout << "End    : " << (concert.endTime.empty() ? "N/A" : concert.endTime) << "\n";
-        cout << "Seats  : " << booking.seats << "\n";
-        cout << "Total Paid : RM " << booking.totalPrice << "\n";
-        cout << "Payment Method: " << booking.paymentMethod << "\n";
-        cout << "Status : " << booking.eventStatus << "\n";
-        cout << "=====================================================\n";
-
-        cout << "Options:\n";
-        cout << "  1. Feedback/Complain\n";
-        cout << "  2. Back to Booking History\n";
-        cout << "Enter Choice: ";
-
-        if (cin >> choice) {
-            switch (choice) {
-                case 1:
-                    fileComplaint(userName, booking.eventName, "User");
-                    return;
-                case 2:
-                    return;
-                default:
-                    clearScreen();
-                    cout << "Invalid choice! Please enter 1 or 2.\n";
-                    break;
-            }
-        } else {
-            clearScreen();
-            cin.clear();
-            cin.ignore(10000, '\n');
-            cout << "Invalid input! Please enter a number.\n";
-        }
-    }
 }
 
 void viewBookingHistory(const string &userName) {
@@ -1884,22 +2109,37 @@ void viewBookingHistory(const string &userName) {
 
         cout << "=== BOOKING HISTORY ===\n";
         for (size_t i = 0; i < bookings.size(); i++) {
-            cout << (i + 1) << ". Concert: " << bookings[i].eventName
-                    << " (Show Date: " << bookings[i].eventDate << ")\n";
-            cout << bookings[i].eventStatus << "\n";
-            cout << "--------------------------\n";
+            // Get the latest event status and date information
+            EventStatus status;
+            loadEventStatus(bookings[i].eventName, status);
+            
+            // Use updated date if available, otherwise use original booking date
+            string displayDate = status.date.empty() ? bookings[i].eventDate : status.date;
+            
+            // Count seats
+            int seatCount = 0;
+            stringstream ss(bookings[i].seats);
+            string seat;
+            while (getline(ss, seat, ',')) {
+                seatCount++;
+            }
+            
+            cout << (i + 1) << left << setw(11) << " Concert"<<": " <<bookings[i].eventName << " ";
+            cout << "(" << displayDate << ")\n";  
+            cout << "  " << left << setw(11) << "Seats" << ": " << seatCount << " seat(s)\n";
+            cout << "  " <<left << setw(11) << "Total" << ": RM " << fixed << setprecision(2) << bookings[i].totalPrice << "\n";
+            cout << "  " << left << setw(11) << "Status" << ": " << determineEventStatus(displayDate, bookings[i].eventName) << "\n";
+            cout << "-----------------------------------------\n";
         }
 
         cout << "Options:\n";
-        cout << "Your can enter number for detail\n";
-        cout << "Search Bookings = \"S\"\n";
-        cout << "Back to User Menu = \"B\"\n";
+        cout << "Enter number for booking details , Search Bookings = \"S\" , Back to User Menu = \"0\"\n";
         cout << "Enter Choice: ";
 
         string choice;
         cin >> choice;
 
-        if (toLowerSTR(choice) == "b") {
+        if (choice == "0") {
             clearScreen();
             return;
         } else if (toLowerSTR(choice) == "s") {
@@ -1917,6 +2157,68 @@ void viewBookingHistory(const string &userName) {
                 cout << "Invalid input!\n";
                 Sleep(1000);
             }
+        }
+    }
+}
+
+// Display detailed booking information
+void displayBookingDetail(const Booking &booking, const string &userName) {
+    clearScreen();
+
+    // Get the latest event status and time information
+    EventStatus status;
+    loadEventStatus(booking.eventName, status);
+    Concert concert = getBookingConcertDetails(booking.eventName);
+    string displayDate = status.date.empty() ? booking.eventDate : status.date;
+
+    
+    
+    // Count seats
+    int seatCount = 0;
+    stringstream ss(booking.seats);
+    string seat;
+    while (getline(ss, seat, ',')) {
+        seatCount++;
+    }
+
+    int choice;
+
+    while (true) {
+        cout << "=== BOOKING DETAILS ===\n";
+        cout << left << setw(15) << "Concert" << " : " << booking.eventName << "\n";
+        cout << left << setw(15) << "Artist" << ": " << (concert.artist.empty() ? "N/A" : concert.artist) << "\n";
+        cout << left << setw(15) << "Venue" << ": " << (concert.venue.empty() ? "N/A" : concert.venue) << "\n";
+        cout << left << setw(15) << "Date" << ": " << (status.date.empty() ? booking.eventDate : status.date) << "\n"; 
+        cout << left << setw(15) << "Start Time" << ": " << (status.startTime.empty() ? concert.startTime : status.startTime) << "\n";  
+        cout << left << setw(15) << "End Time" << ": " << (status.endTime.empty() ? concert.endTime : status.endTime) << "\n";  
+        cout << left << setw(15) << "Seats" << ": " << booking.seats << " (" << seatCount << " seat(s))\n";
+        cout << left << setw(15) << "Total Paid" << ": RM " << fixed << setprecision(2) << booking.totalPrice << "\n";
+        cout << left << setw(15) << "Payment Method" << ": " << booking.paymentMethod << "\n";
+        cout << left << setw(15) << "Status" << ": " << determineEventStatus(displayDate, booking.eventName) << "\n";
+        cout << "=====================================================\n";
+
+        cout << "Options:\n";
+        cout << "  1. Feedback/Complain\n";
+        cout << "  0. Back\n";
+        cout << "Enter Choice: ";
+
+        if (cin >> choice) {
+            switch (choice) {
+                case 1:
+                    fileComplaint(userName, booking.eventName, "User");
+                    return;
+                case 0:
+                    return;
+                default:
+                    clearScreen();
+                    cout << "Invalid choice! Please enter 1 or 0.\n";
+                    break;
+            }
+        } else {
+            clearScreen();
+            cin.clear();
+            cin.ignore(10000, '\n');
+            cout << "Invalid input! Please enter a number.\n";
         }
     }
 }
@@ -2011,7 +2313,7 @@ void eventReport() {
     // Display past events only
     vector<pair<Concert, bool> > pastEvents;
     for (const Concert &c: concerts) {
-        if (determineEventStatus(c.date) == "Past") {
+        if (determineEventStatus(c.date,c.concertName) == "Past") {
             pastEvents.push_back({c, true});
         }
     }
