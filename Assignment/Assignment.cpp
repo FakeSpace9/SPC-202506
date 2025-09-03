@@ -2185,7 +2185,7 @@ void displayBookingDetail(const Booking &booking, const string &userName) {
 
     while (true) {
         cout << "=== BOOKING DETAILS ===\n";
-        cout << left << setw(15) << "Concert" << " : " << booking.eventName << "\n";
+        cout << left << setw(15) << "Concert" << ": " << booking.eventName << "\n";
         cout << left << setw(15) << "Artist" << ": " << (concert.artist.empty() ? "N/A" : concert.artist) << "\n";
         cout << left << setw(15) << "Venue" << ": " << (concert.venue.empty() ? "N/A" : concert.venue) << "\n";
         cout << left << setw(15) << "Date" << ": " << (status.date.empty() ? booking.eventDate : status.date) << "\n"; 
