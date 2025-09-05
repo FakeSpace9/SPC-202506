@@ -1,7 +1,7 @@
 EventName=cnm
-ManualStatus=Gate Open
+ManualStatus=Ongoing
 GateTime=00:41
 EntryTime=11:30
-StartTime=12:00
+StartTime=01:00
 EndTime=14:00
 Date=06-09-2025
