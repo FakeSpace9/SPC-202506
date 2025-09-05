@@ -3,3 +3,4 @@ test;bye;01-09-2025;A1,A2,A3;300;OnlineBanking
 test;sohai;12-09-2025;A2,A3,A5;300;OnlineBanking
 kys;123;02-09-2025;A3,A4;200;OnlineBanking
 test;fuck;12-12-2025;A2,A3,A4,A5;400;OnlineBanking
+test;cnm;12-12-2025;A2,A4;200;OnlineBanking

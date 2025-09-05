@@ -1061,24 +1061,13 @@ void saveSeats(const string &seatFileName, const vector<Seat> &seats) {
     }
 }
 
-vector<Concert> loadPastConcerts(vector<Concert> concerts) {
-    vector<Concert> pastConcerts;
 
-    for (const Concert &concert: concerts) {
-        if (determineEventStatus(concert.date, concert.concertName) == "Past") {
-            pastConcerts.push_back(concert);
-        }
-    }
-
-    return pastConcerts;
-}
 
 void displayAvailableEvent(const string &userName) {
     clearScreen();
     int choice;
     vector<Concert> concerts = loadUpcomingConcerts();
-    vector<Concert> validConcert = loadPastConcerts(concerts);
-
+//n111
 
     while (true) {
         if (concerts.empty()) {
@@ -1089,11 +1078,11 @@ void displayAvailableEvent(const string &userName) {
 
         // Concert selection
         cout << "\nAvailable Events:\n";
-        for (size_t i = 0; i < validConcert.size(); i++) {
-            cout << i + 1 << ". " << validConcert[i].concertName
-                    << " by " << validConcert[i].artist
-                    << " at " << validConcert[i].venue
-                    << " on " << validConcert[i].date << " " << validConcert[i].startTime << "\n";
+        for (size_t i = 0; i < concerts.size(); i++) {
+            cout << i + 1 << ". " << concerts[i].concertName
+                    << " by " << concerts[i].artist
+                    << " at " << concerts[i].venue
+                    << " on " << concerts[i].date << " " << concerts[i].startTime << "\n";
         }
         cout << "0. Back\n";
 
@@ -1105,7 +1094,7 @@ void displayAvailableEvent(const string &userName) {
             clearScreen();
             return;
         } // back to previous menu
-        if (choice < 1 || choice > (int) validConcert.size()) {
+        if (choice < 1 || choice > (int) concerts.size()) {
             clearScreen();
             cout << "Invalid choice. Please try again\n";
         }else {
@@ -1121,9 +1110,9 @@ void eventRegistration(const string &userName,const int choice) {
     size_t consumed = 0;
     int number;
     vector<Concert> concerts = loadUpcomingConcerts();
-    vector<Concert> validConcert = loadPastConcerts(concerts);
 
-    Concert selected = validConcert[choice - 1];
+
+    Concert selected = concerts[choice - 1];
     string seatFileName = "seats_" + selected.concertName + ".txt";
     replace(seatFileName.begin(), seatFileName.end(), ' ', '_');
     vector<Seat> seats = loadSeats(seatFileName);
