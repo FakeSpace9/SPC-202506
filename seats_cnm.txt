@@ -101,8 +101,8 @@ E;20;Normal;20;0
 F;1;Normal;20;0
 F;2;Normal;20;0
 F;3;Normal;20;0
-F;4;Normal;20;0
-F;5;Normal;20;0
+F;4;Normal;20;1
+F;5;Normal;20;1
 F;6;Normal;20;0
 F;7;Normal;20;0
 F;8;Normal;20;0
