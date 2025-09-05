@@ -2308,7 +2308,7 @@ void viewBookingHistory(const string &userName) {
                 seatCount++;
             }
             
-            cout << (i + 1) << left << setw(11) << " Concert "<<": " <<bookings[i].eventName << " ";
+            cout << (i + 1) << left << setw(11) << " Concert "<<" : " <<bookings[i].eventName << " ";
             cout << "(" << displayDate << ")\n";  
             cout << "  " << left << setw(11) << "Seats" << ": " << seatCount << " seat(s)\n";
             cout << "  " <<left << setw(11) << "Total" << ": RM " << fixed << setprecision(2) << bookings[i].totalPrice << "\n";
