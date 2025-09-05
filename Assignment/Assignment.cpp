@@ -77,7 +77,7 @@ void viewBookingHistory(const string &userName);
 void searchBookings(const vector<Booking> &bookings, const string &userName);
 void sortBookingsByDate(vector<Booking> &bookings);
 vector<Booking> loadUserBookings(const string &userName);
-string determineEventStatus(const string &eventDate, const string &eventName);
+string determineEventStatus(const string &eventDate);
 bool canSetStatus(const string& currentStatus, const string& newStatus);
 void displayBookingDetail(const Booking &booking, const string &userName);
 Concert getBookingConcertDetails(const string &eventName);
@@ -125,46 +125,35 @@ void clearScreen() {
 
 void mainMenu() {
     int choice;
-    string choiceStr;
 
-    while (true) {
-        clearScreen();
-        cout << "Welcome to blah blah blah\n"
-                << endl;
-        displayUpcomingConcert();
-        cout << "1. User Registration.\n2. Login\n3. Exit\nEnter your choice : ";
+    clearScreen();
+    cout << "Welcome to blah blah blah\n"
+            << endl;
+    displayUpcomingConcert();
+    cout << "1. User Registration.\n2. Login\n3. Exit\nEnter your choice : ";
 
-        cin >> choiceStr;
-        try {
-            choice = stoi(choiceStr);  // convert string to integer
-        } catch (invalid_argument&) {
-            cout << "Invalid input. Your input must be a number. Please try again in 3 second.\n";
+    cin >> choice;
+
+    switch (choice) {
+        case 1:
+            userRegister();
+            break;
+
+        case 2:
+            userLogin();
+            break;
+
+        case 3:
+            return;
+
+        default:
+            cout << "Invalid option, Please try again in 3 second.";
+            cin.clear();
+            cin.ignore();
             Sleep(3000);
-            continue; // retry
-        } catch (out_of_range&) {
-            cout << "Invalid input. Your input is too large. Please try again in 3 second.\n";
-            Sleep(3000);
-            continue; // retry
-        }
-
-        switch (choice) {
-            case 1:
-                userRegister();
-                break;
-
-            case 2:
-                userLogin();
-                break;
-
-            case 3:
-                return;
-
-            default:
-                cout << "Invalid option, Please try again in 3 second.";
-                Sleep(3000);
-                clearScreen();
-
-        }
+            clearScreen();
+            mainMenu();
+            break;
     }
 }
 
@@ -317,6 +306,11 @@ void userLogin() {
         return;
     }
     string line;
+
+    cout << "==================\n";
+    cout << "User Login\n";
+    cout << "==================\n";
+
     // read user data to vector
     while (getline(readFile, line)) {
         if (line.empty())
@@ -334,10 +328,16 @@ void userLogin() {
         users.push_back(u);
     }
     readFile.close();
-    while (true) {
-        cout << "==================\n";
-        cout << "User Login\n";
-        cout << "==================\n";
+
+    int attempts = 0;
+    bool firstAttemptFailed = false;
+    while (!pwMatch && attempts < 3) {
+        if (firstAttemptFailed) {
+            clearScreen();
+            cout << "==================\n";
+            cout << "User Login\n";
+            cout << "==================\n";
+        }
         cout << "Enter your username (back to return): ";
         cin >> userName;
         if (toLowerSTR(userName) == "back") {
@@ -357,26 +357,25 @@ void userLogin() {
             if (users[i].username == userName) {
                 existUser = true;
                 if (users[i].password == password) {
-                        clearScreen();
-                        cout << "login successful";
-                        userMenu(userName);
+                    pwMatch = true;
                 } else {
                     clearScreen();
                     cout << "User Login Failed\nPlease try again\n\nUsername or password incorrect.\n";
-                    Sleep(1000);
-                    clearScreen();
                 }
                 break;
             }
         }
         if (!existUser) {
             clearScreen();
-            cout << "User Login Failed\nPlease try again\nUsername or password incorrect.\n";
-            Sleep(2000);
-            clearScreen();
+            cout << "User Login Failed\nPlease try again\n\nUsername or password incorrect.\n";
+            firstAttemptFailed = true;
         }
     }
-
+    if (pwMatch) {
+        clearScreen();
+        cout << "login successful";
+        userMenu(userName);
+    }
 }
 
 string toLowerSTR(string strings) {
@@ -646,25 +645,14 @@ void userProfile(string userName) {
 
 void userMenu(string userName) {
     int choice;
-    string choiceStr;
 
     while (true) {
         cout << "\nWelcome " << userName << "!" << endl;
         cout << "1. Event Register\n2. Booking History\n3. Profile\n4. Logout";
         // profile is to view past ticket also with update email and password
         cout << "\nEnter your choice :";
-        cin >> choiceStr;
-        try {
-            choice = stoi(choiceStr);  // convert string to integer
-        } catch (invalid_argument&) {
-            clearScreen();
-            cout << "Invalid input. Your input must be a number. Please try again.\n";
-            continue; // retry
-        } catch (out_of_range&) {
-            clearScreen();
-            cout << "Invalid input. Your input is too large. Please try again.\n";
-            continue; // retry
-        }
+
+        if (cin >> choice) {
             switch (choice) {
                 case 1:
                     displayAvailableEvent(userName);
@@ -690,10 +678,15 @@ void userMenu(string userName) {
                     cout << "Invalid option. Try again.";
                     choice = 0;
             }
-
+        } else {
+            clearScreen();
+            cout << "Invalid option. Try again.";
+            choice = 0;
+            cin.clear();
+            cin.ignore(10000, '\n');
         }
     }
-
+}
 
 bool isFutureDate(string dateStr) {
     // allow using / instead of -
@@ -764,9 +757,6 @@ void createEventSeats() {
     clearScreen();
     string eventName, artistName, eventVenue, eventDate, startTime, endTime;
     int rows, cols, vipRows, regularRows;
-    string rowStr, colsStr, vipRowStr, regularRowsStr;
-
-
     cin.ignore();
     const int MAX_ROWS = 26;
     const int MAX_COLS = 20;
@@ -814,49 +804,31 @@ void createEventSeats() {
         getline(cin, endTime);
     } while (!timeValid(endTime));
 
+
     while (true) {
-        cout << "Enter number of rows (max 26): ";
-        cin >> rowStr;
-
-        try {
-            rows = stoi(rowStr);  // convert string to integer
-        } catch (invalid_argument&) {
-
-            cout << "Invalid input. Your input must be a number. Please try again.\n";
-            continue; // retry
-        } catch (out_of_range&) {
-
-            cout << "Invalid input. Your input is too large. Please try again.\n";
-            continue; // retry
-        }
-
+        std::cout << "Enter number of rows (max 26): ";
+        cin >> rows;
         if (rows >= 1 && rows <= MAX_ROWS) {
-            break; // valid input
+            break;
         }
-
         cout << "Invalid input. Rows must be between 1 and " << MAX_ROWS << ". Please try again.\n";
+        cin.clear();
+        cin.ignore();
     }
+
+
 
     while (true) {
         cout << "Enter number of seats per row (1-" << MAX_COLS << "): ";
-        cin >> colsStr;
-
-        try {
-            cols = stoi(colsStr); // convert string to integer
-        } catch (invalid_argument&) {
-            cout << "Invalid input. Please enter a number between 1 and " << MAX_COLS << ".\n";
-            continue;
-        } catch (out_of_range&) {
-            cout << "Invalid input. Number is too large.\n";
-            continue;
+        if (cin >> cols && cols >= 1 && cols <= MAX_COLS) {
+            break;
         }
-
-        if (cols >= 1 && cols <= MAX_COLS) {
-            break; // valid input
-        }
-
-        cout << "Invalid input. Columns must be between 1 and " << MAX_COLS << ".\n";
+        cout << "Invalid input. Columns must be between 1 and " << MAX_COLS << ". Please try again.\n";
+        cin.clear();
+        cin.ignore();
     }
+
+
 
     // categorize rows
     while (true) {
@@ -1062,12 +1034,10 @@ void saveSeats(const string &seatFileName, const vector<Seat> &seats) {
 }
 
 
-
 void displayAvailableEvent(const string &userName) {
     clearScreen();
     int choice;
     vector<Concert> concerts = loadUpcomingConcerts();
-//n111
 
     while (true) {
         if (concerts.empty()) {
@@ -1523,7 +1493,6 @@ int timeToMinutes(const string& timeStr) {
 }
 // Get current status 
 string getCurrentEventStatus(const EventStatus &status) {
-
     if (status.manualStatus == "Cancelled") {
         return "Cancelled";
     }
@@ -1544,42 +1513,35 @@ string getCurrentEventStatus(const EventStatus &status) {
     sprintf_s(currentTimeBuffer, "%02d:%02d", local.tm_hour, local.tm_min);
     string currentTime(currentTimeBuffer);
 
-    // Compare dates first
     if (status.date != currentDate) {
-        // Parse event date
         int eventDay, eventMonth, eventYear;
-        sscanf_s(status.date.c_str(), "%d-%d-%d", &eventDay, &eventMonth, &eventYear);
-        
-        // Parse current date
         int currentDay, currentMonth, currentYear;
-        sscanf_s(currentDate.c_str(), "%d-%d-%d", &currentDay, &currentMonth, &currentYear);
         
-        // Create tm structures for comparison
-        tm eventTm = {};
-        eventTm.tm_mday = eventDay;
-        eventTm.tm_mon = eventMonth - 1;  // tm_mon is 0-based
-        eventTm.tm_year = eventYear - 1900;  // tm_year is years since 1900
-        
-        tm currentTm = {};
-        currentTm.tm_mday = currentDay;
-        currentTm.tm_mon = currentMonth - 1;
-        currentTm.tm_year = currentYear - 1900;
-        
-        // Convert to time_t for easy comparison
-        time_t eventTime = mktime(&eventTm);
-        time_t currentTimeT = mktime(&currentTm);
-        
-        if (eventTime > currentTimeT) {
-            // Event is in the future
-            return "Upcoming";
-        } else if (eventTime < currentTimeT) {
-            // Event was in the past
-            return "Completed";
+        if (sscanf_s(status.date.c_str(), "%d-%d-%d", &eventDay, &eventMonth, &eventYear) == 3) {
+            currentDay = local.tm_mday;
+            currentMonth = local.tm_mon + 1;
+            currentYear = local.tm_year + 1900;
+            
+            if (eventYear > currentYear) {
+                return "Upcoming";
+            } else if (eventYear < currentYear) {
+                return "Completed";
+            } else {
+                if (eventMonth > currentMonth) {
+                    return "Upcoming";
+                } else if (eventMonth < currentMonth) {
+                    return "Completed";
+                } else {
+                    if (eventDay > currentDay) {
+                        return "Upcoming";
+                    } else if (eventDay < currentDay) {
+                        return "Completed";
+                    }
+                }
+            }
         }
-        // If dates are equal, continue with time comparison below
     }
 
-    // If we reach here, the event is today, so compare times
     int cur = timeToMinutes(currentTime);
     int gate = timeToMinutes(status.gateTime);
     int entry = timeToMinutes(status.entryTime);
@@ -1593,9 +1555,7 @@ string getCurrentEventStatus(const EventStatus &status) {
     else if (cur < end) timeBasedStatus = "Ongoing";
     else timeBasedStatus = "Completed";
 
-    // If there is a manual state, check whether automatic conversion is required
     if (!status.manualStatus.empty()) {
-        // Define the status priority (larger numbers indicate later status)
         auto getStatusPriority = [](const string& s) {
             if (s == "Upcoming") return 1;
             if (s == "Gate Open") return 2;
@@ -1608,7 +1568,6 @@ string getCurrentEventStatus(const EventStatus &status) {
         int manualPriority = getStatusPriority(status.manualStatus);
         int timePriority = getStatusPriority(timeBasedStatus);
 
-        // If the time status is further than the manual status, automatically switch
         if (timePriority > manualPriority) {
             return timeBasedStatus;
         } else {
@@ -1955,6 +1914,7 @@ void displayStatusUpdateMenu(EventStatus &status, const Concert &concert) {
                                 status.endTime != originalEnd);
 
                                 if (timeUpdated) {
+                                    status.manualStatus = "";
                                     saveEventStatus(status);
                                     cout << "\nTime updated successfully!\n";
                                 } else {
@@ -2130,7 +2090,7 @@ vector<Booking> loadUserBookings(const string &userName) {
 }
 
 // Determine if event is upcoming or past
-string determineEventStatus(const string &eventDate, const string &eventName ) {
+string determineEventStatus(const string &eventDate, const string &eventName = "") {
     // dd-mm-yyyy format
     int day, month, year;
     char dash1, dash2;
@@ -2201,12 +2161,12 @@ string determineEventStatus(const string &eventDate, const string &eventName ) {
             int eventEndTimeInMin = endHour * 60 + endMin;
 
             // Determine status based on current time
-            if (currentTimeInMin < eventStartTimeInMin) {
-                return "Upcoming";  
-            } else if (currentTimeInMin >= eventStartTimeInMin && currentTimeInMin <= eventEndTimeInMin) {
-                return "Ongoing";   
-            } else {
-                return "Past";     
+            if (currentTimeInMin > eventEndTimeInMin) {
+                return "Past";
+            }else if(currentTimeInMin < eventStartTimeInMin){
+                return "Upcoming";
+            }else{
+                return "Ongoing";
             }
         }
         
@@ -2567,7 +2527,6 @@ void eventReport() {
     }
 
     // Display past events only
-
     vector<pair<Concert, bool> > pastEvents;
     for (const Concert &c: concerts) {
         if (determineEventStatus(c.date,c.concertName) == "Past") {
