@@ -77,7 +77,7 @@ void viewBookingHistory(const string &userName);
 void searchBookings(const vector<Booking> &bookings, const string &userName);
 void sortBookingsByDate(vector<Booking> &bookings);
 vector<Booking> loadUserBookings(const string &userName);
-string determineEventStatus(const string &eventDate);
+string determineEventStatus(const string &eventDate, const string &eventName);
 bool canSetStatus(const string& currentStatus, const string& newStatus);
 void displayBookingDetail(const Booking &booking, const string &userName);
 Concert getBookingConcertDetails(const string &eventName);
@@ -125,35 +125,46 @@ void clearScreen() {
 
 void mainMenu() {
     int choice;
+    string choiceStr;
 
-    clearScreen();
-    cout << "Welcome to blah blah blah\n"
-            << endl;
-    displayUpcomingConcert();
-    cout << "1. User Registration.\n2. Login\n3. Exit\nEnter your choice : ";
+    while (true) {
+        clearScreen();
+        cout << "Welcome to blah blah blah\n"
+                << endl;
+        displayUpcomingConcert();
+        cout << "1. User Registration.\n2. Login\n3. Exit\nEnter your choice : ";
 
-    cin >> choice;
-
-    switch (choice) {
-        case 1:
-            userRegister();
-            break;
-
-        case 2:
-            userLogin();
-            break;
-
-        case 3:
-            return;
-
-        default:
-            cout << "Invalid option, Please try again in 3 second.";
-            cin.clear();
-            cin.ignore();
+        cin >> choiceStr;
+        try {
+            choice = stoi(choiceStr);  // convert string to integer
+        } catch (invalid_argument&) {
+            cout << "Invalid input. Your input must be a number. Please try again in 3 second.\n";
             Sleep(3000);
-            clearScreen();
-            mainMenu();
-            break;
+            continue; // retry
+        } catch (out_of_range&) {
+            cout << "Invalid input. Your input is too large. Please try again in 3 second.\n";
+            Sleep(3000);
+            continue; // retry
+        }
+
+        switch (choice) {
+            case 1:
+                userRegister();
+                break;
+
+            case 2:
+                userLogin();
+                break;
+
+            case 3:
+                return;
+
+            default:
+                cout << "Invalid option, Please try again in 3 second.";
+                Sleep(3000);
+                clearScreen();
+
+        }
     }
 }
 
@@ -306,11 +317,6 @@ void userLogin() {
         return;
     }
     string line;
-
-    cout << "==================\n";
-    cout << "User Login\n";
-    cout << "==================\n";
-
     // read user data to vector
     while (getline(readFile, line)) {
         if (line.empty())
@@ -328,16 +334,10 @@ void userLogin() {
         users.push_back(u);
     }
     readFile.close();
-
-    int attempts = 0;
-    bool firstAttemptFailed = false;
-    while (!pwMatch && attempts < 3) {
-        if (firstAttemptFailed) {
-            clearScreen();
-            cout << "==================\n";
-            cout << "User Login\n";
-            cout << "==================\n";
-        }
+    while (true) {
+        cout << "==================\n";
+        cout << "User Login\n";
+        cout << "==================\n";
         cout << "Enter your username (back to return): ";
         cin >> userName;
         if (toLowerSTR(userName) == "back") {
@@ -357,25 +357,26 @@ void userLogin() {
             if (users[i].username == userName) {
                 existUser = true;
                 if (users[i].password == password) {
-                    pwMatch = true;
+                        clearScreen();
+                        cout << "login successful";
+                        userMenu(userName);
                 } else {
                     clearScreen();
                     cout << "User Login Failed\nPlease try again\n\nUsername or password incorrect.\n";
+                    Sleep(1000);
+                    clearScreen();
                 }
                 break;
             }
         }
         if (!existUser) {
             clearScreen();
-            cout << "User Login Failed\nPlease try again\n\nUsername or password incorrect.\n";
-            firstAttemptFailed = true;
+            cout << "User Login Failed\nPlease try again\nUsername or password incorrect.\n";
+            Sleep(2000);
+            clearScreen();
         }
     }
-    if (pwMatch) {
-        clearScreen();
-        cout << "login successful";
-        userMenu(userName);
-    }
+
 }
 
 string toLowerSTR(string strings) {
@@ -645,14 +646,25 @@ void userProfile(string userName) {
 
 void userMenu(string userName) {
     int choice;
+    string choiceStr;
 
     while (true) {
         cout << "\nWelcome " << userName << "!" << endl;
         cout << "1. Event Register\n2. Booking History\n3. Profile\n4. Logout";
         // profile is to view past ticket also with update email and password
         cout << "\nEnter your choice :";
-
-        if (cin >> choice) {
+        cin >> choiceStr;
+        try {
+            choice = stoi(choiceStr);  // convert string to integer
+        } catch (invalid_argument&) {
+            clearScreen();
+            cout << "Invalid input. Your input must be a number. Please try again.\n";
+            continue; // retry
+        } catch (out_of_range&) {
+            clearScreen();
+            cout << "Invalid input. Your input is too large. Please try again.\n";
+            continue; // retry
+        }
             switch (choice) {
                 case 1:
                     displayAvailableEvent(userName);
@@ -678,15 +690,10 @@ void userMenu(string userName) {
                     cout << "Invalid option. Try again.";
                     choice = 0;
             }
-        } else {
-            clearScreen();
-            cout << "Invalid option. Try again.";
-            choice = 0;
-            cin.clear();
-            cin.ignore(10000, '\n');
+
         }
     }
-}
+
 
 bool isFutureDate(string dateStr) {
     // allow using / instead of -
@@ -814,10 +821,12 @@ void createEventSeats() {
         try {
             rows = stoi(rowStr);  // convert string to integer
         } catch (invalid_argument&) {
-            cout << "Invalid input. Rows must be a number. Please try again.\n";
+
+            cout << "Invalid input. Your input must be a number. Please try again.\n";
             continue; // retry
         } catch (out_of_range&) {
-            cout << "Invalid input. Number is too large. Please try again.\n";
+
+            cout << "Invalid input. Your input is too large. Please try again.\n";
             continue; // retry
         }
 
@@ -1052,10 +1061,24 @@ void saveSeats(const string &seatFileName, const vector<Seat> &seats) {
     }
 }
 
+vector<Concert> loadPastConcerts(vector<Concert> concerts) {
+    vector<Concert> pastConcerts;
+
+    for (const Concert &concert: concerts) {
+        if (determineEventStatus(concert.date, concert.concertName) == "Past") {
+            pastConcerts.push_back(concert);
+        }
+    }
+
+    return pastConcerts;
+}
+
 void displayAvailableEvent(const string &userName) {
     clearScreen();
     int choice;
     vector<Concert> concerts = loadUpcomingConcerts();
+    vector<Concert> validConcert = loadPastConcerts(concerts);
+
 
     while (true) {
         if (concerts.empty()) {
@@ -1066,11 +1089,11 @@ void displayAvailableEvent(const string &userName) {
 
         // Concert selection
         cout << "\nAvailable Events:\n";
-        for (size_t i = 0; i < concerts.size(); i++) {
-            cout << i + 1 << ". " << concerts[i].concertName
-                    << " by " << concerts[i].artist
-                    << " at " << concerts[i].venue
-                    << " on " << concerts[i].date << " " << concerts[i].startTime << "\n";
+        for (size_t i = 0; i < validConcert.size(); i++) {
+            cout << i + 1 << ". " << validConcert[i].concertName
+                    << " by " << validConcert[i].artist
+                    << " at " << validConcert[i].venue
+                    << " on " << validConcert[i].date << " " << validConcert[i].startTime << "\n";
         }
         cout << "0. Back\n";
 
@@ -1082,7 +1105,7 @@ void displayAvailableEvent(const string &userName) {
             clearScreen();
             return;
         } // back to previous menu
-        if (choice < 1 || choice > (int) concerts.size()) {
+        if (choice < 1 || choice > (int) validConcert.size()) {
             clearScreen();
             cout << "Invalid choice. Please try again\n";
         }else {
@@ -1098,10 +1121,9 @@ void eventRegistration(const string &userName,const int choice) {
     size_t consumed = 0;
     int number;
     vector<Concert> concerts = loadUpcomingConcerts();
+    vector<Concert> validConcert = loadPastConcerts(concerts);
 
-
-
-    Concert selected = concerts[choice - 1];
+    Concert selected = validConcert[choice - 1];
     string seatFileName = "seats_" + selected.concertName + ".txt";
     replace(seatFileName.begin(), seatFileName.end(), ' ', '_');
     vector<Seat> seats = loadSeats(seatFileName);
@@ -2119,7 +2141,7 @@ vector<Booking> loadUserBookings(const string &userName) {
 }
 
 // Determine if event is upcoming or past
-string determineEventStatus(const string &eventDate, const string &eventName = "") {
+string determineEventStatus(const string &eventDate, const string &eventName ) {
     // dd-mm-yyyy format
     int day, month, year;
     char dash1, dash2;
@@ -2556,6 +2578,7 @@ void eventReport() {
     }
 
     // Display past events only
+
     vector<pair<Concert, bool> > pastEvents;
     for (const Concert &c: concerts) {
         if (determineEventStatus(c.date,c.concertName) == "Past") {
