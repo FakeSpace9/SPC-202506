@@ -1,7 +1,7 @@
 EventName=cnm
-ManualStatus=
-GateTime=11:00
+ManualStatus=Gate Open
+GateTime=00:41
 EntryTime=11:30
 StartTime=12:00
 EndTime=14:00
-Date=09-09-2025
+Date=06-09-2025

@@ -6,3 +6,4 @@ kys;kys;kys;12-12-2025;12:00;14:00;seats_kys.txt
 sohai;sohai;sohai;12-09-2025;12:00;14:00;seats_sohai.txt
 jibai;jibai;jibai;06-09-2025;12:00;14:00;seats_jibai.txt
 fuck;fuck;fuck;12-12-2025;12:00;14:00;seats_fuck.txt
+cnm;12;12;12-12-2025;12:00;14:00;seats_cnm.txt

@@ -1033,6 +1033,7 @@ void saveSeats(const string &seatFileName, const vector<Seat> &seats) {
     }
 }
 
+
 void displayAvailableEvent(const string &userName) {
     clearScreen();
     int choice;
@@ -1079,7 +1080,6 @@ void eventRegistration(const string &userName,const int choice) {
     size_t consumed = 0;
     int number;
     vector<Concert> concerts = loadUpcomingConcerts();
-
 
 
     Concert selected = concerts[choice - 1];
