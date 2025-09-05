@@ -1701,11 +1701,27 @@ void displayStatusUpdateMenu(EventStatus &status, const Concert &concert) {
                             getline(cin, newTime);
                             if (timeValid(newTime)) {
                                 cout << "\nProcessing time update...\n";
+                                string originalGate = status.gateTime;
+                                string originalEntry = status.entryTime;
+                                string originalStart = status.startTime;
+                                string originalEnd = status.endTime;
+
                                 cascadeTimeUpdate(status, timeChoice, newTime);
-                                saveEventStatus(status);
-                                cout << "\nTime updated successfully!\n";
-                                cout << "Press Enter to continue...";
-                                cin.get();
+
+                                // Check if any time was actually updated
+                                bool timeUpdated = (status.gateTime != originalGate || 
+                                status.entryTime != originalEntry || 
+                                status.startTime != originalStart || 
+                                status.endTime != originalEnd);
+
+                                if (timeUpdated) {
+                                    saveEventStatus(status);
+                                    cout << "\nTime updated successfully!\n";
+                                } else {
+                                    cout << "\nTime update cancelled due to validation error.\n";
+                                }
+                                    cout << "Press Enter to continue...";
+                                    cin.get();
                             } else {
                                 cout << "Invalid time format!\n";
                                 Sleep(1000);
@@ -1777,7 +1793,6 @@ void displayMonitoring(const Concert &c) {
 
     int choice;
     while (true) {
-        // Display details with proper alignment using setw
         cout << "========== EVENT MONITORING ==========\n";
         cout << left << setw(10) << "Concert" << ": " << c.concertName << endl;
         cout << left << setw(10) << "Artist" << ": " << c.artist << endl;
@@ -2185,7 +2200,7 @@ void displayBookingDetail(const Booking &booking, const string &userName) {
 
     while (true) {
         cout << "=== BOOKING DETAILS ===\n";
-        cout << left << setw(15) << "Concert" << " : " << booking.eventName << "\n";
+        cout << left << setw(15) << "Concert" << ": " << booking.eventName << "\n";
         cout << left << setw(15) << "Artist" << ": " << (concert.artist.empty() ? "N/A" : concert.artist) << "\n";
         cout << left << setw(15) << "Venue" << ": " << (concert.venue.empty() ? "N/A" : concert.venue) << "\n";
         cout << left << setw(15) << "Date" << ": " << (status.date.empty() ? booking.eventDate : status.date) << "\n"; 
