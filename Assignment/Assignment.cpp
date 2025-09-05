@@ -757,6 +757,9 @@ void createEventSeats() {
     clearScreen();
     string eventName, artistName, eventVenue, eventDate, startTime, endTime;
     int rows, cols, vipRows, regularRows;
+    string rowStr, colsStr, vipRowStr, regularRowsStr;
+
+
     cin.ignore();
     const int MAX_ROWS = 26;
     const int MAX_COLS = 20;
@@ -804,31 +807,47 @@ void createEventSeats() {
         getline(cin, endTime);
     } while (!timeValid(endTime));
 
-
     while (true) {
-        std::cout << "Enter number of rows (max 26): ";
-        cin >> rows;
-        if (rows >= 1 && rows <= MAX_ROWS) {
-            break;
+        cout << "Enter number of rows (max 26): ";
+        cin >> rowStr;
+
+        try {
+            rows = stoi(rowStr);  // convert string to integer
+        } catch (invalid_argument&) {
+            cout << "Invalid input. Rows must be a number. Please try again.\n";
+            continue; // retry
+        } catch (out_of_range&) {
+            cout << "Invalid input. Number is too large. Please try again.\n";
+            continue; // retry
         }
+
+        if (rows >= 1 && rows <= MAX_ROWS) {
+            break; // valid input
+        }
+
         cout << "Invalid input. Rows must be between 1 and " << MAX_ROWS << ". Please try again.\n";
-        cin.clear();
-        cin.ignore();
     }
-
-
 
     while (true) {
         cout << "Enter number of seats per row (1-" << MAX_COLS << "): ";
-        if (cin >> cols && cols >= 1 && cols <= MAX_COLS) {
-            break;
+        cin >> colsStr;
+
+        try {
+            cols = stoi(colsStr); // convert string to integer
+        } catch (invalid_argument&) {
+            cout << "Invalid input. Please enter a number between 1 and " << MAX_COLS << ".\n";
+            continue;
+        } catch (out_of_range&) {
+            cout << "Invalid input. Number is too large.\n";
+            continue;
         }
-        cout << "Invalid input. Columns must be between 1 and " << MAX_COLS << ". Please try again.\n";
-        cin.clear();
-        cin.ignore();
+
+        if (cols >= 1 && cols <= MAX_COLS) {
+            break; // valid input
+        }
+
+        cout << "Invalid input. Columns must be between 1 and " << MAX_COLS << ".\n";
     }
-
-
 
     // categorize rows
     while (true) {
