@@ -3,3 +3,4 @@ haha;haha;123;11-11-2025;12:00;17:00;seats_haha.txt
 bye;bye;bye;01-09-2025;18:22;18:23;seats_bye.txt
 123;123;123;02-09-2025;12:00;14:00;seats_123.txt
 kys;kys;kys;12-12-2025;12:00;14:00;seats_kys.txt
+sohai;sohai;sohai;12-09-2025;12:00;14:00;seats_sohai.txt

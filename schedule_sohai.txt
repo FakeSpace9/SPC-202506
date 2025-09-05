@@ -1,0 +1,7 @@
+EventName=sohai
+ManualStatus=
+GateTime=11:00
+EntryTime=11:30
+StartTime=12:00
+EndTime=14:00
+Date=12-09-2025
