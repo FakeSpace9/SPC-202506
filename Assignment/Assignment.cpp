@@ -1517,15 +1517,58 @@ string getCurrentEventStatus(const EventStatus &status) {
         return "Cancelled";
     }
 
-    // use current time to determine status
+    // Get current time and date
     time_t now = time(0);
     tm local;
     localtime_s(&local, &now);
 
-    char buffer[6];
-    sprintf_s(buffer, "%02d:%02d", local.tm_hour, local.tm_min);
-    string currentTime(buffer);
+    // Format current date as DD-MM-YYYY
+    char currentDateBuffer[11];
+    sprintf_s(currentDateBuffer, "%02d-%02d-%04d", 
+              local.tm_mday, local.tm_mon + 1, local.tm_year + 1900);
+    string currentDate(currentDateBuffer);
 
+    // Format current time as HH:MM
+    char currentTimeBuffer[6];
+    sprintf_s(currentTimeBuffer, "%02d:%02d", local.tm_hour, local.tm_min);
+    string currentTime(currentTimeBuffer);
+
+    // Compare dates first
+    if (status.date != currentDate) {
+        // Parse event date
+        int eventDay, eventMonth, eventYear;
+        sscanf_s(status.date.c_str(), "%d-%d-%d", &eventDay, &eventMonth, &eventYear);
+        
+        // Parse current date
+        int currentDay, currentMonth, currentYear;
+        sscanf_s(currentDate.c_str(), "%d-%d-%d", &currentDay, &currentMonth, &currentYear);
+        
+        // Create tm structures for comparison
+        tm eventTm = {};
+        eventTm.tm_mday = eventDay;
+        eventTm.tm_mon = eventMonth - 1;  // tm_mon is 0-based
+        eventTm.tm_year = eventYear - 1900;  // tm_year is years since 1900
+        
+        tm currentTm = {};
+        currentTm.tm_mday = currentDay;
+        currentTm.tm_mon = currentMonth - 1;
+        currentTm.tm_year = currentYear - 1900;
+        
+        // Convert to time_t for easy comparison
+        time_t eventTime = mktime(&eventTm);
+        time_t currentTimeT = mktime(&currentTm);
+        
+        if (eventTime > currentTimeT) {
+            // Event is in the future
+            return "Upcoming";
+        } else if (eventTime < currentTimeT) {
+            // Event was in the past
+            return "Completed";
+        }
+        // If dates are equal, continue with time comparison below
+    }
+
+    // If we reach here, the event is today, so compare times
     int cur = timeToMinutes(currentTime);
     int gate = timeToMinutes(status.gateTime);
     int entry = timeToMinutes(status.entryTime);
@@ -1561,7 +1604,6 @@ string getCurrentEventStatus(const EventStatus &status) {
             return status.manualStatus;
         }
     }
-
 
     return timeBasedStatus;
 }
