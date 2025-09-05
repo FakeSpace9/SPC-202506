@@ -42,7 +42,7 @@ struct Concert {
     string endTime;
 };
 
-vector<Concert> loadConcerts(const string &filename);
+
 
 struct EventStatus {
     string eventName;
@@ -70,6 +70,8 @@ struct Booking {
     string eventStatus;
 };
 
+vector<Concert> loadConcerts(const string &filename);
+vector<Concert> loadUpcomingConcerts();
 void displayAvailableEvent(const string &userName);
 void viewBookingHistory(const string &userName);
 void searchBookings(const vector<Booking> &bookings, const string &userName);
@@ -107,6 +109,7 @@ bool checkoutAndPayment(const string &userName, const Concert &concert, const ve
 string getPasswordInput();
 void eventFeedback(string userName);
 void eventReport();
+void userProfile(string userName);
 
 // main function
 int main() {
@@ -145,6 +148,8 @@ void mainMenu() {
 
         default:
             cout << "Invalid option, Please try again in 3 second.";
+            cin.clear();
+            cin.ignore();
             Sleep(3000);
             clearScreen();
             mainMenu();
@@ -284,7 +289,7 @@ string getPasswordInput() {
 
 void userLogin() {
     clearScreen();
-    string password;
+    string password, confirmPassword;
     string userName;
     bool pwMatch = false;
     vector<User> users;
@@ -324,7 +329,15 @@ void userLogin() {
     }
     readFile.close();
 
-    while (!pwMatch) {
+    int attempts = 0;
+    bool firstAttemptFailed = false;
+    while (!pwMatch && attempts < 3) {
+        if (firstAttemptFailed) {
+            clearScreen();
+            cout << "==================\n";
+            cout << "User Login\n";
+            cout << "==================\n";
+        }
         cout << "Enter your username (back to return): ";
         cin >> userName;
         if (toLowerSTR(userName) == "back") {
@@ -334,10 +347,9 @@ void userLogin() {
         cout << "Enter password : ";
         password = getPasswordInput();
 
-
         if (toLowerSTR(userName) == "admin" && password == "admin") {
             adminMenu();
-            return; // exit the program
+            return;
         }
 
         bool existUser = false;
@@ -346,16 +358,17 @@ void userLogin() {
                 existUser = true;
                 if (users[i].password == password) {
                     pwMatch = true;
-                    break;
                 } else {
                     clearScreen();
                     cout << "User Login Failed\nPlease try again\n\nUsername or password incorrect.\n";
                 }
+                break;
             }
         }
         if (!existUser) {
             clearScreen();
             cout << "User Login Failed\nPlease try again\n\nUsername or password incorrect.\n";
+            firstAttemptFailed = true;
         }
     }
     if (pwMatch) {
@@ -501,12 +514,141 @@ void adminMenu() {
     }
 }
 
+void userProfile(string userName) {
+    clearScreen();
+    string password, email, confirmPassword;
+    vector<User> users;
+    bool updated = false;
+
+    // Load current user data
+    ifstream readFile("userDetails.txt");
+    string line;
+    while (getline(readFile, line)) {
+        if (line.empty()) continue;
+        User u;
+        int pos1 = line.find(";");
+        int pos2 = line.rfind(";");
+        u.username = line.substr(0, pos1);
+        u.email = line.substr(pos1 + 1, pos2 - pos1 - 1);
+        u.password = line.substr(pos2 + 1);
+        users.push_back(u);
+    }
+    readFile.close();
+
+    // Find current user
+    User currentUser;
+    for (const User &u: users) {
+        if (u.username == userName) {
+            currentUser = u;
+            break;
+        }
+    }
+
+    while (true) {
+        clearScreen();
+        cout << "=== USER PROFILE ===\n";
+        cout << "Username: " << currentUser.username << "\n";
+        cout << "Email: " << currentUser.email << "\n\n";
+        cout << "1. Change Password\n";
+        cout << "2. Change Email\n";
+        cout << "0. Back\n\n";
+        cout << "Enter choice: ";
+
+        int choice;
+        cin >> choice;
+
+        switch (choice) {
+            case 1: {
+                cin.ignore();
+                cout << "Enter current password: ";
+                string currentPass = getPasswordInput();
+
+                if (currentPass != currentUser.password) {
+                    cout << "\nIncorrect current password!\n";
+                    Sleep(1000);
+                    continue;
+                }
+
+                cout << "\nEnter new password: ";
+                string newPass = getPasswordInput();
+
+                if (newPass.length() < 8) {
+                    cout << "\nPassword must be at least 8 characters long!\n";
+                    Sleep(1000);
+                    continue;
+                }
+
+                cout << "\nConfirm new password: ";
+                string confirmPass = getPasswordInput();
+
+                if (newPass != confirmPass) {
+                    cout << "\nPasswords do not match!\n";
+                    Sleep(1000);
+                    continue;
+                }
+
+                // Update password in users vector
+                for (User &u: users) {
+                    if (u.username == currentUser.username) {
+                        u.password = newPass;
+                        currentUser.password = newPass;
+                        break;
+                    }
+                }
+                updated = true;
+                cout << "\nPassword updated successfully!\n";
+                Sleep(1000);
+                break;
+            }
+            case 2: {
+                cin.ignore();
+                cout << "Enter new email: ";
+                string newEmail;
+                getline(cin, newEmail);
+
+                if (!isEmailValid(newEmail)) {
+                    cout << "Invalid email format!\n";
+                    Sleep(1000);
+                    continue;
+                }
+
+                // Update email in users vector
+                for (User &u: users) {
+                    if (u.username == currentUser.username) {
+                        u.email = newEmail;
+                        currentUser.email = newEmail;
+                        break;
+                    }
+                }
+                updated = true;
+                cout << "Email updated successfully!\n";
+                Sleep(1000);
+                break;
+            }
+            case 0:
+                // Save changes if any updates were made
+                if (updated) {
+                    ofstream writeFile("userDetails.txt");
+                    for (const User &u: users) {
+                        writeFile << u.username << ";" << u.email << ";" << u.password << "\n";
+                    }
+                    writeFile.close();
+                }
+                return;
+            default:
+                cout << "Invalid choice!\n";
+                Sleep(1000);
+                break;
+        }
+    }
+}
+
 void userMenu(string userName) {
     int choice;
 
     while (true) {
         cout << "\nWelcome " << userName << "!" << endl;
-        cout << "1. Event Register\n2. Booking History\n3. Logout";
+        cout << "1. Event Register\n2. Booking History\n3. Profile\n4. Logout";
         // profile is to view past ticket also with update email and password
         cout << "\nEnter your choice :";
 
@@ -518,7 +660,10 @@ void userMenu(string userName) {
                 case 2:
                     viewBookingHistory(userName);
                     break;
-                case 3:
+                    case 3:
+                    userProfile(userName);
+                    break;
+                case 4:
                     clearScreen();
                     cout << "Logout Successful";
                     for (int i = 0; i < 3; i++) {
@@ -808,9 +953,31 @@ vector<Concert> loadConcerts(const string &filename) {
     return concerts;
 }
 
+vector<Concert> loadUpcomingConcerts() {
+    vector<Concert> concerts = loadConcerts("events.txt");
+    vector<Concert> upcomingConcerts;
+    time_t now = time(nullptr);
+
+    for (const Concert &c : concerts) {
+        tm concertTime = {};
+        istringstream ss(c.date + " " + c.startTime);
+        if (!(ss >> get_time(&concertTime, "%d-%m-%Y %H:%M"))) {
+            cout << "Warning: Invalid date/time format for concert: " << c.concertName << "\n";
+            continue;
+        }
+
+        time_t concertEpoch = mktime(&concertTime);
+        if (concertEpoch != -1 && concertEpoch > now) {
+            upcomingConcerts.push_back(c);
+        }
+    }
+    return upcomingConcerts;
+}
+
+
 void displayUpcomingConcert() {
     static size_t index = 0; // remembers last shown concert
-    vector<Concert> concerts = loadConcerts("events.txt");
+    vector<Concert> concerts = loadUpcomingConcerts();
 
     if (concerts.empty()) {
         cout << "=================================\n";
@@ -867,9 +1034,10 @@ void saveSeats(const string &seatFileName, const vector<Seat> &seats) {
 }
 
 void displayAvailableEvent(const string &userName) {
-    int choice;
-    vector<Concert> concerts = loadConcerts("events.txt");
     clearScreen();
+    int choice;
+    vector<Concert> concerts = loadUpcomingConcerts();
+
     while (true) {
         if (concerts.empty()) {
             cout << "No events available.\n";
@@ -910,7 +1078,7 @@ void displayAvailableEvent(const string &userName) {
 void eventRegistration(const string &userName,const int choice) {
     size_t consumed = 0;
     int number;
-    vector<Concert> concerts = loadConcerts("events.txt");
+    vector<Concert> concerts = loadUpcomingConcerts();
 
 
 
@@ -1983,6 +2151,7 @@ void searchBookings(const vector<Booking> &bookings, const string &userName) {
     if (bookings.empty()) {
         cout << "No bookings found to search.\n";
         Sleep(1000);
+        clearScreen();
         return;
     }
 
@@ -2124,7 +2293,7 @@ void viewBookingHistory(const string &userName) {
                 seatCount++;
             }
             
-            cout << (i + 1) << left << setw(11) << " Concert"<<": " <<bookings[i].eventName << " ";
+            cout << (i + 1) << left << setw(11) << " Concert "<<": " <<bookings[i].eventName << " ";
             cout << "(" << displayDate << ")\n";  
             cout << "  " << left << setw(11) << "Seats" << ": " << seatCount << " seat(s)\n";
             cout << "  " <<left << setw(11) << "Total" << ": RM " << fixed << setprecision(2) << bookings[i].totalPrice << "\n";
