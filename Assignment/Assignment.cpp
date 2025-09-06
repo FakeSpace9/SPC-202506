@@ -129,10 +129,21 @@ void mainMenu() {
 
     while (true) {
         clearScreen();
-        cout << "Welcome to blah blah blah\n"
-            << endl;
+        cout << "    ________                                __      __   ______           \n";
+        cout << "   /        |                              /  |    /  | /      \\          \n";
+        cout << "   $$$$$$$$/__     __  ______   _______   _$$ |_   $$/ /$$$$$$  |__    __ \n";
+        cout << "   $$ |__  /  \\   /  |/      \\ /       \\ / $$   |  /  |$$ |_ $$//  |  /  |\n";
+        cout << "   $$    | $$  \\ /$$//$$$$$$  |$$$$$$$  |$$$$$$/   $$ |$$   |   $$ |  $$ |\n";
+        cout << "   $$$$$/   $$  /$$/ $$    $$ |$$ |  $$ |  $$ | __ $$ |$$$$/    $$ |  $$ |\n";
+        cout << "   $$ |_____ $$ $$/  $$$$$$$$/ $$ |  $$ |  $$ |/  |$$ |$$ |     $$ \\__$$ |\n";
+        cout << "   $$       | $$$/   $$       |$$ |  $$ |  $$  $$/ $$ |$$ |     $$    $$ |\n";
+        cout << "   $$$$$$$$/   $/     $$$$$$$/ $$/   $$/    $$$$/  $$/ $$/       $$$$$$$ |\n";
+        cout << "                                                                /  \\__$$ |\n";
+        cout << "                                                                $$    $$/ \n";
+        cout << "                                                                 $$$$$$/  \n";
+
         displayUpcomingConcert();
-        cout << "1. User Registration.\n2. Login\n3. Exit\nEnter your choice : ";
+        cout << "Menu:\n1. User Registration.\n2. Login\n3. Exit\nEnter your choice : ";
 
         cin >> choiceStr;
         try {
@@ -373,7 +384,7 @@ void userLogin() {
                 else {
                     clearScreen();
                     cout << "User Login Failed\nPlease try again\n\nUsername or password incorrect.\n";
-                    Sleep(1000);
+                    Sleep(3000);
                     clearScreen();
                 }
                 break;
@@ -382,7 +393,7 @@ void userLogin() {
         if (!existUser) {
             clearScreen();
             cout << "User Login Failed\nPlease try again\nUsername or password incorrect.\n";
-            Sleep(2000);
+            Sleep(3000);
             clearScreen();
         }
     }
@@ -568,9 +579,22 @@ void userProfile(string userName) {
         cout << "0. Back\n\n";
         cout << "Enter choice: ";
 
+        string choiceStr;
         int choice;
-        cin >> choice;
-
+        cin >> choiceStr;
+        try {
+            choice = stoi(choiceStr);  // convert string to integer
+        }
+        catch (invalid_argument&) {
+            cout << "Invalid input. Your input must be a number. Please try again in 3 seconds.\n";
+            Sleep(3000);
+            continue; // retry
+        }
+        catch (out_of_range&) {
+            cout << "Invalid input. Your input is too large. Please try again in 3 seconds.\n";
+            Sleep(3000);
+            continue; // retry
+        }
         switch (choice) {
         case 1: {
             cin.ignore();
@@ -578,26 +602,26 @@ void userProfile(string userName) {
             string currentPass = getPasswordInput();
 
             if (currentPass != currentUser.password) {
-                cout << "\nIncorrect current password!\n";
-                Sleep(1000);
+                cout << "Incorrect current password!\nPlease try again in 3 seconds";
+                Sleep(3000);
                 continue;
             }
 
-            cout << "\nEnter new password: ";
+            cout << "Enter new password: ";
             string newPass = getPasswordInput();
 
             if (newPass.length() < 8) {
-                cout << "\nPassword must be at least 8 characters long!\n";
+                cout << "Password must be at least 8 characters long!\n";
                 Sleep(1000);
                 continue;
             }
 
-            cout << "\nConfirm new password: ";
+            cout << "Confirm new password: ";
             string confirmPass = getPasswordInput();
 
             if (newPass != confirmPass) {
-                cout << "\nPasswords do not match!\n";
-                Sleep(1000);
+                cout << "Passwords do not match!\nPlease try again in 3 seconds";
+                Sleep(3000);
                 continue;
             }
 
@@ -621,8 +645,8 @@ void userProfile(string userName) {
             getline(cin, newEmail);
 
             if (!isEmailValid(newEmail)) {
-                cout << "Invalid email format!\n";
-                Sleep(1000);
+                cout << "Invalid email format!\nPlease try again in 3 seconds";
+                Sleep(3000);
                 continue;
             }
 
@@ -651,8 +675,8 @@ void userProfile(string userName) {
                 clearScreen();
             return;
         default:
-            cout << "Invalid choice!\n";
-            Sleep(1000);
+            cout << "Invalid choice!\nPlease try again in 3 seconds";
+                Sleep(3000);
             break;
         }
     }
