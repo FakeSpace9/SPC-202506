@@ -853,7 +853,16 @@ void createEventSeats() {
     do {
         cout << "Enter End Time (HH:MM): ";
         getline(cin, endTime);
-    } while (!timeValid(endTime));
+
+        if (!timeValid(endTime)) {
+            continue; // retry if format invalid
+        }
+
+        if (timeToMinutes(endTime) <= timeToMinutes(startTime)) {
+            cout << "End time cannot be earlier than or equal to start time. Please enter again.\n";
+            endTime.clear(); // force retry
+        }
+    } while (endTime.empty());
 
     while (true) {
         cout << "Enter number of rows (max 26): ";
