@@ -2220,7 +2220,6 @@ string determineEventStatus(const string& eventDate, const string& eventName) {
             return "Cancelled";
         }
         
-        // If there's a current status from the monitoring system, use it
         string currentStatus = getCurrentEventStatus(status);
         if (currentStatus == "Cancelled") {
             return "Cancelled";
