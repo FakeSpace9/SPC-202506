@@ -2210,6 +2210,24 @@ vector<Booking> loadUserBookings(const string& userName) {
 
 // Determine if event is upcoming or past
 string determineEventStatus(const string& eventDate, const string& eventName) {
+
+    if (!eventName.empty()) {
+        EventStatus status;
+        loadEventStatus(eventName, status);
+        
+        // If event is manually set to cancelled, return that immediately
+        if (status.manualStatus == "Cancelled") {
+            return "Cancelled";
+        }
+        
+        // If there's a current status from the monitoring system, use it
+        string currentStatus = getCurrentEventStatus(status);
+        if (currentStatus == "Cancelled") {
+            return "Cancelled";
+        }
+        
+    }
+    
     // dd-mm-yyyy format
     int day, month, year;
     char dash1, dash2;
