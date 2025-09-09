@@ -1390,6 +1390,9 @@ bool checkoutAndPayment(const string& userName, const Concert& concert, const ve
             }
             else if (method == 2) {
                 cout << "Enter bank name (or type 'back'): ";
+                getline(cin, detail);
+                if (detail == "back") break;
+                cout << "\nEnter your account: ";
             }
             else {
                 cout << "Enter e-wallet ID/number (or type 'back'): ";
