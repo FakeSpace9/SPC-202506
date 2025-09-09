@@ -1,0 +1,7 @@
+user1;Issac Chong;09-09-2025;A2,A1,A3,A4,A5,A6,A7,A8,A9,A10;1000;Card
+user1;Issac Chong;09-09-2025;B1,B2,B3,B4,B5,B6,B7,B8;800;OnlineBanking
+user1;Issac Chong;09-09-2025;C1,C2,C3,C4,C5,C6,C7;350;EWallet
+user1;Goh TE;09-09-2025;A2,A3,A4,A5,A6;500;Card
+user1;Goh TE;09-09-2025;B1,B2,B3,B4,B5;500;OnlineBanking
+user1;Goh TE;09-09-2025;V2,V5,V6,V7,V8,V4,V3;140;EWallet
+user1;Issac Chong;09-09-2025;D3,D7,D8,D9,D10,W1,W2,W5,W7,W8,W9,W10;390;OnlineBanking

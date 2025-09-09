@@ -149,7 +149,7 @@ void mainMenu() {
             choice = stoi(choiceStr);  // convert string to integer
         }
         catch (invalid_argument&) {
-            cout << "Invalid input. Your input must be a number. Please try again in 3 second.\n";
+            cout << "Invalid input. Your input must be a positive number. Please try again in 3 second.\n";
             Sleep(3000);
             continue; // retry
         }
@@ -585,7 +585,7 @@ void userProfile(string userName) {
             choice = stoi(choiceStr);  // convert string to integer
         }
         catch (invalid_argument&) {
-            cout << "Invalid input. Your input must be a number. Please try again in 3 seconds.\n";
+            cout << "Invalid input. Your input must be a positive number. Please try again in 3 seconds.\n";
             Sleep(3000);
             continue; // retry
         }
@@ -696,7 +696,7 @@ void userMenu(string userName) {
         }
         catch (invalid_argument&) {
             clearScreen();
-            cout << "Invalid input. Your input must be a number. Please try again.\n";
+            cout << "Invalid input. Your input must be a positive number. Please try again.\n";
             continue; // retry
         }
         catch (out_of_range&) {
@@ -872,12 +872,13 @@ void createEventSeats() {
         }
         catch (invalid_argument&) {
 
-            cout << "Invalid input. Your input must be a number. Please try again.\n";
+            cout << "Invalid input. Please try again.\n";
+
             continue; // retry
         }
         catch (out_of_range&) {
 
-            cout << "Invalid input. Your input is too large. Please try again.\n";
+            cout << "Invalid input. Please try again.\n";
             continue; // retry
         }
 
@@ -2698,23 +2699,39 @@ void eventReport() {
 
     while (true) {
         clearScreen();
+        int choice;
+        string choiceStr;
         cout << "=== EVENT REPORTS ===\n\n";
         cout << "Past Events:\n";
         for (size_t i = 0; i < pastEvents.size(); i++) {
             cout << (i + 1) << ". " << pastEvents[i].first.concertName
-                << " (" << pastEvents[i].first.date << ")";
+                << " (" << pastEvents[i].first.date << ")\n";
         }
-        cout << "\n0. Back\n\n";
+        cout << "0. Back\n\n";
         cout << "Select event to view report: ";
 
-        int choice;
-        cin >> choice;
+
+        cin >> choiceStr;
+        try {
+            choice = stoi(choiceStr);  // convert string to integer
+        }
+        catch (invalid_argument&) {
+            cout << "Invalid input. Please try again in 3 second.\n";
+            Sleep(3000);
+            continue; // retry
+        }
+        catch (out_of_range&) {
+            cout << "Invalid input. Please try again in 3 second.\n";
+            Sleep(3000);
+            continue; // retry
+        }
+
 
         if (choice == 0) return;
-        if (choice < 1 || choice >(int) pastEvents.size()) {
-            cout << "Invalid choice!\n";
-            Sleep(1000);
-            continue;
+        if (choice > pastEvents.size()) {
+            cout << "Invalid input. Please try again in 3 second.\n";
+            Sleep(3000);
+            continue; // retry
         }
 
         const Concert& selectedConcert = pastEvents[choice - 1].first;// to take the concert name
