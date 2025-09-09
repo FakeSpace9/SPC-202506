@@ -2027,6 +2027,7 @@ void displayStatusUpdateMenu(EventStatus& status, const Concert& concert) {
                                 status.endTime != originalEnd);
 
                             if (timeUpdated) {
+                                status.manualStatus = " ";
                                 saveEventStatus(status);
                                 cout << "\nTime updated successfully!\n";
                             }
