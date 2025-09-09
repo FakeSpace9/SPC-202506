@@ -67,7 +67,6 @@ struct Booking {
     double totalPrice;
     string paymentMethod;
     string bookingDateTime;
-    string eventStatus;
 };
 
 vector<Concert> loadConcerts(const string& filename);
