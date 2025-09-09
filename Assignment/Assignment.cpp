@@ -2328,9 +2328,9 @@ void sortBookingsByDate(vector<Booking>& bookings) {
         ssA >> dayA >> dash >> monthA >> dash >> yearA;
         ssB >> dayB >> dash >> monthB >> dash >> yearB;
 
-        if (yearA != yearB) return yearA > yearB;
-        if (monthA != monthB) return monthA > monthB;
-        return dayA > dayB;
+        if (yearA != yearB) return yearA < yearB;
+        if (monthA != monthB) return monthA < monthB;
+        return dayA < dayB;
         });
 }
 
