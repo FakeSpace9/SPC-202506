@@ -1644,7 +1644,7 @@ string getCurrentEventStatus(const EventStatus& status) {
         // If dates are equal, continue with time comparison below
     }
 
-    // If we reach here, the event is today, so compare times
+    // If the event is today, so compare times
     int cur = timeToMinutes(currentTime);
     int gate = timeToMinutes(status.gateTime);
     int entry = timeToMinutes(status.entryTime);
