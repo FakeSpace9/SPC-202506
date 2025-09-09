@@ -2197,11 +2197,6 @@ vector<Booking> loadUserBookings(const string& userName) {
             booking.paymentMethod = payment;
             booking.bookingDateTime = getCurrentDateTime();
 
-            // Get current status from event monitoring system
-            EventStatus status;
-            loadEventStatus(event, status);
-            booking.eventStatus = getCurrentEventStatus(status);
-
             userBookings.push_back(booking);
         }
     }
