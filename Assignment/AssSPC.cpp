@@ -853,15 +853,11 @@ void createEventSeats() {
         cout << "Enter End Time (HH:MM): ";
         getline(cin, endTime);
 
-        if (!timeValid(endTime)) {
-            continue; // retry if format invalid
-        }
-
         if (timeToMinutes(endTime) <= timeToMinutes(startTime)) {
             cout << "End time cannot be earlier than or equal to start time. Please enter again.\n";
             endTime.clear(); // force retry
         }
-    } while (endTime.empty());
+    } while (endTime.empty() || !timeValid(endTime));
 
     while (true) {
         cout << "Enter number of rows (max 26): ";
@@ -953,12 +949,19 @@ void createEventSeats() {
     // set seat prices
     double vipPrice, regPrice, normalPrice;
     cout << "\nSet the price\n";
-    cout << "Enter VIP seat price: RM ";
-    cin >> vipPrice;
-    cout << "Enter Regular seat price: RM ";
-    cin >> regPrice;
-    cout << "Enter Normal seat price: RM ";
-    cin >> normalPrice;
+
+    if (vipRows > 0) {
+        cout << "Enter VIP seat price: RM ";
+        cin >> vipPrice;
+    }
+    if (regularRows > 0) {
+        cout << "Enter Regular seat price: RM ";
+        cin >> regPrice;
+    }
+    if (vipRows + regularRows < rows) { // meaning there are remaining rows (Normal)
+        cout << "Enter Normal seat price: RM ";
+        cin >> normalPrice;
+    }
 
     vector<Seat> seatList;
     for (int i = 0; i < rows; i++) {
@@ -2213,19 +2216,19 @@ string determineEventStatus(const string& eventDate, const string& eventName) {
     if (!eventName.empty()) {
         EventStatus status;
         loadEventStatus(eventName, status);
-        
+
         // If event is manually set to cancelled, return that immediately
         if (status.manualStatus == "Cancelled") {
             return "Cancelled";
         }
-        
+
         string currentStatus = getCurrentEventStatus(status);
         if (currentStatus == "Cancelled") {
             return "Cancelled";
         }
-        
+
     }
-    
+
     // dd-mm-yyyy format
     int day, month, year;
     char dash1, dash2;
