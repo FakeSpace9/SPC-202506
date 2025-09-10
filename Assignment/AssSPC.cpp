@@ -419,7 +419,6 @@ void eventFeedback() {
 
         for (const Concert& concert : concerts) {
             // const ensure not modify the file
-            //for each concert in the list of concerts, give me a read-only reference called concert that I can use inside the loop.
             string issueFile = "issues_" + concert.concertName + ".txt";
             replace(issueFile.begin(), issueFile.end(), ' ', '_');
 
@@ -853,8 +852,17 @@ void createEventSeats() {
         cout << "Enter End Time (HH:MM): ";
         getline(cin, endTime);
 
-        if (timeToMinutes(endTime) <= timeToMinutes(startTime)) {
-            cout << "End time cannot be earlier than or equal to start time. Please enter again.\n";
+        int startMinutes = timeToMinutes(startTime);
+        int endMinutes = timeToMinutes(endTime);
+
+        // If end time is earlier or equal, assume it's on the next day
+        if (endMinutes <= startMinutes) {
+            endMinutes += 24 * 60; // add 24 hours
+        }
+
+        // check for minimum duration if needed
+        if (endMinutes - startMinutes <= 0) {
+            cout << "End time must be after start time. Please enter again.\n";
             endTime.clear(); // force retry
         }
     } while (endTime.empty() || !timeValid(endTime));
@@ -930,7 +938,7 @@ void createEventSeats() {
     }
 
     string seatFileName = "seats_" + eventName + ".txt";
-    // make filename nice one
+    // make filename
     replace(seatFileName.begin(), seatFileName.end(), ' ', '_');
 
     clearScreen();
@@ -1083,7 +1091,7 @@ void displayUpcomingConcert() {
     index = (index + 1) % concerts.size(); // rotate
 }
 
-// Utility: Load seats from file
+// load seats from file
 vector<Seat> loadSeats(const string& seatFileName) {
     vector<Seat> seats;
     ifstream file(seatFileName);
@@ -1125,7 +1133,6 @@ void displayAvailableEvent(const string& userName) {
     clearScreen();
     int choice;
     vector<Concert> concerts = loadUpcomingConcerts();
-    //n111
 
     while (true) {
         if (concerts.empty()) {
@@ -1555,7 +1562,7 @@ void loadEventStatus(const string& eventName, EventStatus& status) {
     }
 }
 
-// Update event times (if no manual override, use auto calculation)
+// Update event times
 void updateEventTimes(EventStatus& status, const Concert& concert) {
 
     auto calcTime = [](string t, int minusHour, int minusMin) {
@@ -2771,6 +2778,7 @@ void eventReport() {
         double vipRevenue = 0;
         double regularRevenue = 0;
         double normalRevenue = 0;
+        //map is act hex map that the first element inside the<> is the key type and the other is value type
         map<string, int> paymentMethods;
         int totalSeats = 0;
         int vipSeats = 0;
@@ -2796,6 +2804,7 @@ void eventReport() {
 
         for (const Booking& b : allBookings) {
             totalRevenue += b.totalPrice;
+            //for the specific paymentmethod increase the value
             paymentMethods[b.paymentMethod]++;
 
             // Count seats in booking and calculate revenue by type

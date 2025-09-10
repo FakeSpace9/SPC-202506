@@ -1,0 +1,7 @@
+EventName=dwa
+ManualStatus=Gate Open
+GateTime=14:01
+EntryTime=21:30
+StartTime=22:00
+EndTime=00:00
+Date=10-09-2025
